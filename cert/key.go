@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -30,6 +31,13 @@ func writePrivateKeyToFile(keys *rsa.PrivateKey, fileName string) error {
 	if err := pem.Encode(&buffer, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(keys)}); err != nil {
 		return err
 	}
+
+	var _, err = os.Stat(fileName)
+	if err == nil {
+		logrus.WithField("outfile", fileName).Error("Key file already exists")
+		return fmt.Errorf("Key file %s already exists", fileName)
+	}
+
 	f, err := os.Create(fileName)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create key file")
