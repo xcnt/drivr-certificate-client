@@ -1,6 +1,9 @@
 package main
 
-import "github.com/urfave/cli/v2"
+import (
+	"github.com/urfave/cli/v2"
+	"github.com/xcnt/drivr-certificate-client/cert"
+)
 
 func createCommand() *cli.Command {
 	return &cli.Command{
@@ -22,7 +25,7 @@ func keyPairCommand() *cli.Command {
 }
 
 func createKeyPair(ctx *cli.Context) error {
-	return nil
+	return cert.GenerateRSAKeyPair(2048, "key.pem")
 }
 
 func certificateCommand() *cli.Command {
