@@ -1,4 +1,6 @@
-drivr-cert-client:
+GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
+
+drivr-cert-client: $(GOFILES)
 	go build ./cmd/drivr-cert-client
 
 build: drivr-cert-client
