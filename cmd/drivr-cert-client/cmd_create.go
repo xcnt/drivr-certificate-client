@@ -5,6 +5,11 @@ import (
 	"github.com/xcnt/drivr-certificate-client/cert"
 )
 
+const (
+	PRIVATE_KEY_FILE = "private.key"
+	PUBLIC_KEY_FILE  = "public.key"
+)
+
 var (
 	keyBitsFlag = &cli.IntFlag{
 		Name:    "key-bits",
@@ -12,11 +17,23 @@ var (
 		Usage:   "Number of bits for the key",
 		Value:   2048,
 	}
-	keyOutfileFlag = &cli.StringFlag{
-		Name:    "key-outfile",
-		Aliases: []string{"k"},
-		Usage:   "Output file for the key",
-		Value:   "key.pem",
+	privKeyOutfileFlag = &cli.StringFlag{
+		Name:    "privkey-outfile",
+		Aliases: []string{"o"},
+		Usage:   "Output file for the generated private key",
+		Value:   PRIVATE_KEY_FILE,
+	}
+	privKeyInfileFlag = &cli.StringFlag{
+		Name:    "privkey-infile",
+		Aliases: []string{"i"},
+		Usage:   "Input file containing private key to sign certificate request",
+		Value:   PRIVATE_KEY_FILE,
+	}
+	pubKeyOutfileFlag = &cli.StringFlag{
+		Name:    "pubkey-outfile",
+		Aliases: []string{"u"},
+		Usage:   "Output file for the generated public key",
+		Value:   PUBLIC_KEY_FILE,
 	}
 )
 
@@ -38,13 +55,14 @@ func keyPairCommand() *cli.Command {
 		Action: createKeyPair,
 		Flags: []cli.Flag{
 			keyBitsFlag,
-			keyOutfileFlag,
+			privKeyOutfileFlag,
+			pubKeyOutfileFlag,
 		},
 	}
 }
 
 func createKeyPair(ctx *cli.Context) error {
-	return cert.GenerateRSAKeyPair(ctx.Int(keyBitsFlag.Name), ctx.String(keyOutfileFlag.Name))
+	return cert.GenerateRSAKeyPair(ctx.Int(keyBitsFlag.Name), ctx.String(privKeyOutfileFlag.Name), ctx.String(pubKeyOutfileFlag.Name))
 }
 
 func certificateCommand() *cli.Command {

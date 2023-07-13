@@ -13,22 +13,31 @@ import (
 )
 
 // GenerateRSAKeyPair generates a new RSA key pair of the given bit size.
-func GenerateRSAKeyPair(bits int, outfile string) error {
-	key, err := rsa.GenerateKey(rand.Reader, bits)
+func GenerateRSAKeyPair(bits int, privOutfile, pubOutfile string) error {
+	privKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to generate key")
 		return err
 	}
-	if err := writePrivateKeyToFile(key, outfile); err != nil {
+	logrus.WithField("name", privOutfile).Info("Generate private RSA key")
+	if err := writeKeyToFile("RSA PRIVATE KEY", x509.MarshalPKCS1PrivateKey(privKey), privOutfile); err != nil {
 		logrus.WithError(err).Error("Failed to write private key to file")
 		return err
 	}
+
+	pubKey := &privKey.PublicKey
+	logrus.WithField("name", pubOutfile).Info("Generate public RSA key")
+	if err := writeKeyToFile("RSA PUBLIC KEY", x509.MarshalPKCS1PublicKey(pubKey), pubOutfile); err != nil {
+		logrus.WithError(err).Error("Failed to write public key to file")
+		return err
+	}
+
 	return nil
 }
 
-func writePrivateKeyToFile(keys *rsa.PrivateKey, fileName string) error {
+func writeKeyToFile(keyType string, keyBytes []byte, fileName string) error {
 	var buffer bytes.Buffer
-	if err := pem.Encode(&buffer, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(keys)}); err != nil {
+	if err := pem.Encode(&buffer, &pem.Block{Type: keyType, Bytes: keyBytes}); err != nil {
 		return err
 	}
 
@@ -40,7 +49,7 @@ func writePrivateKeyToFile(keys *rsa.PrivateKey, fileName string) error {
 
 	f, err := os.Create(fileName)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to create key file")
+		logrus.WithError(err).WithField("filename", fileName).Error("Failed to create key file")
 		return err
 	}
 	defer f.Close()
