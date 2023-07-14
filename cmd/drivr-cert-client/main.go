@@ -30,8 +30,9 @@ func initLogging(ctx *cli.Context) {
 
 func main() {
 	app := &cli.App{
-		Name:        "drivr-cert-client",
-		Description: "drivr-cert-client is a command line tool for creating certificates",
+		EnableBashCompletion: true,
+		Name:                 "drivr-cert-client",
+		Description:          "drivr-cert-client is a command line tool for creating certificates",
 		Flags: []cli.Flag{
 			logLevelFlag,
 		},
@@ -42,6 +43,7 @@ func main() {
 		Commands: []*cli.Command{
 			createCommand(),
 			fetchCommand(),
+			completionCommand(),
 		},
 		Version: Version,
 	}
