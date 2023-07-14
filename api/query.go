@@ -11,3 +11,9 @@ type CreateCertificateMutation struct {
 		csr      graphql.String
 	} `graphql:"createCreateCertificate(name: $name, duration: $duration, csr: $csr)"`
 }
+
+type FetchCertificateQuery struct {
+	FetchCertificate struct {
+		name graphql.String
+	} `graphql:"fetchCertificate(name: $name)"`
+}
