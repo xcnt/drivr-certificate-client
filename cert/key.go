@@ -35,21 +35,21 @@ func GenerateRSAKeyPair(bits int, privOutfile, pubOutfile string) error {
 	return nil
 }
 
-func writeKeyToFile(keyType string, keyBytes []byte, fileName string) error {
+func writeKeyToFile(keyType string, keyBytes []byte, filename string) error {
 	var buffer bytes.Buffer
 	if err := pem.Encode(&buffer, &pem.Block{Type: keyType, Bytes: keyBytes}); err != nil {
 		return err
 	}
 
-	var _, err = os.Stat(fileName)
+	var _, err = os.Stat(filename)
 	if err == nil {
-		logrus.WithField("outfile", fileName).Error("Key file already exists")
-		return fmt.Errorf("Key file %s already exists", fileName)
+		logrus.WithField("outfile", filename).Error("Key file already exists")
+		return fmt.Errorf("Key file %s already exists", filename)
 	}
 
-	f, err := os.Create(fileName)
+	f, err := os.Create(filename)
 	if err != nil {
-		logrus.WithError(err).WithField("filename", fileName).Error("Failed to create key file")
+		logrus.WithError(err).WithField("filename", filename).Error("Failed to create key file")
 		return err
 	}
 	defer f.Close()
