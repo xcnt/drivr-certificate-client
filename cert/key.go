@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 
@@ -56,4 +57,26 @@ func writeKeyToFile(keyType string, keyBytes []byte, filename string) error {
 
 	_, err = f.Write(buffer.Bytes())
 	return err
+}
+
+func LoadPrivateKey(filename string) (*rsa.PrivateKey, error) {
+	PEMBytes, err := os.ReadFile(filename)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to read private key from file")
+		return nil, err
+	}
+
+	keyBytes, _ := pem.Decode(PEMBytes)
+	if keyBytes == nil {
+		logrus.WithField("keyfile", filename).Error("Failed to decode private key")
+		return nil, errors.New("Failed to decode private key")
+	}
+
+	privKey, err := x509.ParsePKCS1PrivateKey(keyBytes.Bytes)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse private key")
+		return nil, err
+	}
+
+	return privKey, nil
 }
