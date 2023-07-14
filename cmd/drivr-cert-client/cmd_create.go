@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
+	"encoding/base64"
+
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"github.com/xcnt/drivr-certificate-client/api"
 	"github.com/xcnt/drivr-certificate-client/cert"
 )
 
@@ -34,6 +39,12 @@ var (
 		Aliases: []string{"u"},
 		Usage:   "Output file for the generated public key",
 		Value:   PUBLIC_KEY_FILE,
+	}
+	clientNameFlag = &cli.StringFlag{
+		Name:     "client-name",
+		Aliases:  []string{"n"},
+		Usage:    "Name of the client to create the certificate for",
+		Required: true,
 	}
 )
 
@@ -70,9 +81,56 @@ func certificateCommand() *cli.Command {
 		Name:   "certificate",
 		Usage:  "Create a new certificate",
 		Action: createCertificate,
+		Flags: []cli.Flag{
+			privKeyInfileFlag,
+			APIKeyFlag,
+			clientNameFlag,
+		},
 	}
 }
 
 func createCertificate(ctx *cli.Context) error {
+	name := ctx.String(clientNameFlag.Name)
+
+	// load private key
+	privateKeyFile := ctx.String(privKeyInfileFlag.Name)
+	logrus.WithField("filename", privateKeyFile).Debug("Loading private key")
+	privKey, err := cert.LoadPrivateKey(privateKeyFile)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to load private key")
+		return err
+	}
+
+	logrus.WithField("common_name", name).Debug("Generating CSR")
+	csr, err := cert.CreateCSR(privKey, name)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to generate CSR")
+		return err
+	}
+
+	base64CSR := base64.StdEncoding.EncodeToString(csr)
+
+	logrus.Debug("Initializing GraphQL client")
+	client, err := api.NewClient(ctx.String(APIKeyFlag.Name))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to create GraphQL client")
+		return err
+	}
+
+	vars := map[string]interface{}{
+		"name": name,
+		"csr":  base64CSR,
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"name": name,
+		"csr":  base64CSR,
+	}).Debug("Calling GraphQL API")
+	err = client.Mutate(context.TODO(), &api.CreateCertificateMutation{}, vars)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to request certificate creation")
+		return err
+	}
+
 	return nil
 }
