@@ -40,12 +40,6 @@ var (
 		Usage:   "Output file for the generated public key",
 		Value:   PUBLIC_KEY_FILE,
 	}
-	clientNameFlag = &cli.StringFlag{
-		Name:     "client-name",
-		Aliases:  []string{"n"},
-		Usage:    "Name of the client to create the certificate for",
-		Required: true,
-	}
 )
 
 func createCommand() *cli.Command {
