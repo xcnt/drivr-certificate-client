@@ -22,7 +22,7 @@ func CreateCSR(privKey *rsa.PrivateKey, name string) ([]byte, error) {
 		return nil, err
 	}
 	csr := pem.EncodeToMemory(&pem.Block{
-		Type: "CERTIFICATE REQUEST", Bytes: csrCertificate,
+		Type: string(CertificateRequest), Bytes: csrCertificate,
 	})
 	return csr, nil
 }
