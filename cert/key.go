@@ -18,14 +18,14 @@ func GenerateRSAKeyPair(bits int, privOutfile, pubOutfile string) error {
 		logrus.WithError(err).Error("Failed to generate key")
 		return err
 	}
-	logrus.WithField("name", privOutfile).Info("Generate private RSA key")
+	logrus.WithField("name", privOutfile).Debug("Generate private RSA key")
 	if err := WriteToPEMFile(RSAPrivateKey, x509.MarshalPKCS1PrivateKey(privKey), privOutfile); err != nil {
 		logrus.WithError(err).Error("Failed to write private key to file")
 		return err
 	}
 
 	pubKey := &privKey.PublicKey
-	logrus.WithField("name", pubOutfile).Info("Generate public RSA key")
+	logrus.WithField("name", pubOutfile).Debug("Generate public RSA key")
 	if err := WriteToPEMFile(RSAPublicKey, x509.MarshalPKCS1PublicKey(pubKey), pubOutfile); err != nil {
 		logrus.WithError(err).Error("Failed to write public key to file")
 		return err
