@@ -1,13 +1,11 @@
 package cert
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
