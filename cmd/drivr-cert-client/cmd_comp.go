@@ -78,13 +78,16 @@ func completionCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			shell := c.String("shell")
 			var script string
+			var prog string
 			switch shell {
 			case "bash":
 				script = bash_completion_script
+				prog = os.Args[0]
 			case "zsh":
 				script = zsh_completion_script
+				prog = c.App.Name
 			}
-			return template.Must(template.New("completion_script").Parse(script)).Execute(os.Stdout, os.Args[0])
+			return template.Must(template.New("completion_script").Parse(script)).Execute(os.Stdout, prog)
 		},
 	}
 }
