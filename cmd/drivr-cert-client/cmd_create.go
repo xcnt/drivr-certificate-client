@@ -41,6 +41,12 @@ var (
 		Usage:   "Output file for the generated public key",
 		Value:   PUBLIC_KEY_FILE,
 	}
+	certificateDurationFlag = &cli.IntFlag{
+		Name:    "duration",
+		Aliases: []string{"d"},
+		Usage:   "Duration of the certificate in days",
+		Value:   365,
+	}
 )
 
 func createCommand() *cli.Command {
@@ -124,8 +130,9 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"name": name,
-		"csr":  base64CSR,
+		"name":     name,
+		"csr":      base64CSR,
+		"duration": ctx.Int(certificateDurationFlag.Name),
 	}).Debug("Calling GraphQL API")
 	err = client.Mutate(context.TODO(), &api.CreateCertificateMutation{}, vars)
 	if err != nil {
