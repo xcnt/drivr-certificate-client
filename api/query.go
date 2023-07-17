@@ -6,14 +6,15 @@ import (
 
 type CreateCertificateMutation struct {
 	CreateCertificate struct {
-		name     graphql.String
-		duration graphql.Int
-		csr      graphql.String
-	} `graphql:"createCreateCertificate(name: $name, duration: $duration, csr: $csr)"`
+		Name     graphql.String
+		Duration graphql.Int
+		Csr      graphql.String
+	} `graphql:"createCertificate(name: $name, duration: $duration, csr: $csr)"`
 }
 
 type FetchCertificateQuery struct {
 	FetchCertificate struct {
-		name graphql.String
+		Name        graphql.String
+		Certificate graphql.String
 	} `graphql:"fetchCertificate(name: $name)"`
 }
