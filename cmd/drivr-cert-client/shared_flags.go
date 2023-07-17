@@ -15,4 +15,10 @@ var (
 		Usage:    "Name of the client to create the certificate for",
 		Required: true,
 	}
+	graphqlAPIFlag = &cli.StringFlag{
+		Name:     "graphql-api",
+		Usage:    "URL of the GraphQL API",
+		Required: true,
+		EnvVars:  []string{"DRIVR_GRAPHQL_API"},
+	}
 )

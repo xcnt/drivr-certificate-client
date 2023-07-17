@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"net/url"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -79,12 +80,18 @@ func certificateCommand() *cli.Command {
 			privKeyInfileFlag,
 			APIKeyFlag,
 			clientNameFlag,
+			graphqlAPIFlag,
 		},
 	}
 }
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
+	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
+		return err
+	}
 
 	// load private key
 	privateKeyFile := ctx.String(privKeyInfileFlag.Name)
@@ -105,7 +112,7 @@ func createCertificate(ctx *cli.Context) error {
 	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
 	logrus.Debug("Initializing GraphQL client")
-	client, err := api.NewClient(ctx.String(APIKeyFlag.Name))
+	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create GraphQL client")
 		return err
