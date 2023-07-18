@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/url"
 
 	"github.com/sirupsen/logrus"
@@ -137,11 +138,17 @@ func createCertificate(ctx *cli.Context) error {
 		"csr":      base64CSR,
 		"duration": duration,
 	}).Debug("Calling GraphQL API")
-	err = client.Mutate(context.TODO(), &api.CreateCertificateMutation{}, vars)
+
+	var mutation api.CreateCertificateMutation
+
+	err = client.Mutate(context.TODO(), mutation, vars)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
 		return err
 	}
+
+	logrus.WithField("certificate_uuid", mutation.CreateCertificate.UUID).Debug("Certificate created")
+	fmt.Printf("Certificate UUID: %s\n", mutation.CreateCertificate.UUID)
 
 	return nil
 }
