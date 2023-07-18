@@ -93,6 +93,8 @@ func certificateCommand() *cli.Command {
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
+	duration := ctx.Int(certificateDurationFlag.Name)
+
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
@@ -125,14 +127,15 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	vars := map[string]interface{}{
-		"name": name,
-		"csr":  base64CSR,
+		"name":     name,
+		"csr":      base64CSR,
+		"duration": duration,
 	}
 
 	logrus.WithFields(logrus.Fields{
 		"name":     name,
 		"csr":      base64CSR,
-		"duration": ctx.Int(certificateDurationFlag.Name),
+		"duration": duration,
 	}).Debug("Calling GraphQL API")
 	err = client.Mutate(context.TODO(), &api.CreateCertificateMutation{}, vars)
 	if err != nil {
