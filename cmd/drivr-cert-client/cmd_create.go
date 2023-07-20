@@ -74,7 +74,14 @@ func keyPairCommand() *cli.Command {
 }
 
 func createKeyPair(ctx *cli.Context) error {
-	return cert.GenerateRSAKeyPair(ctx.Int(keyBitsFlag.Name), ctx.String(privKeyOutfileFlag.Name), ctx.String(pubKeyOutfileFlag.Name))
+	privateKeyOutfile := ctx.String(privKeyOutfileFlag.Name)
+	publicKeyOutfile := ctx.String(pubKeyOutfileFlag.Name)
+
+	if privateKeyOutfile == publicKeyOutfile {
+		return fmt.Errorf("Private key and public key output file cannot be the same")
+	}
+
+	return cert.GenerateRSAKeyPair(ctx.Int(keyBitsFlag.Name), privateKeyOutfile, publicKeyOutfile)
 }
 
 func certificateCommand() *cli.Command {
