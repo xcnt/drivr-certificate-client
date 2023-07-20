@@ -14,7 +14,6 @@ import (
 
 const (
 	PRIVATE_KEY_FILE = "private.key"
-	PUBLIC_KEY_FILE  = "public.key"
 )
 
 var (
@@ -40,7 +39,6 @@ var (
 		Name:    "pubkey-outfile",
 		Aliases: []string{"u"},
 		Usage:   "Output file for the generated public key",
-		Value:   PUBLIC_KEY_FILE,
 	}
 	certificateDurationFlag = &cli.IntFlag{
 		Name:    "duration",
