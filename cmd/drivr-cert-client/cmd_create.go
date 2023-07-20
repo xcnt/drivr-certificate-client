@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -102,6 +103,17 @@ func createCertificate(ctx *cli.Context) error {
 
 	// load private key
 	privateKeyFile := ctx.String(privKeyInfileFlag.Name)
+
+	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
+		logrus.Info("Private key file does not exist - generating new key pair")
+
+		if err := cert.GenerateRSAKeyPair(keyBitsFlag.Value, privateKeyFile, ""); err != nil {
+			logrus.WithError(err).Error("Failed to generate key pair")
+			return err
+		}
+
+	}
+
 	logrus.WithField("filename", privateKeyFile).Debug("Loading private key")
 	privKey, err := cert.LoadPrivateKey(privateKeyFile)
 	if err != nil {
