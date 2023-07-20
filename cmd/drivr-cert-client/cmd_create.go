@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"time"
 
+	"github.com/shurcooL/graphql"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/xcnt/drivr-certificate-client/api"
@@ -14,7 +17,9 @@ import (
 )
 
 const (
-	PRIVATE_KEY_FILE = "private.key"
+	PRIVATE_KEY_FILE  = "private.key"
+	FETCH_DELAY_SEC   = 1
+	FETCH_TIMEOUT_SEC = 120
 )
 
 var (
@@ -164,8 +169,46 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	logrus.WithField("certificate_uuid", mutation.CreateCertificate.UUID).Debug("Certificate created")
-	fmt.Printf("Certificate UUID: %s\n", mutation.CreateCertificate.UUID)
+	certificateUUID := mutation.CreateCertificate.UUID
 
-	return nil
+	logrus.WithField("certificate_uuid", string(certificateUUID)).Debug("Certificate requested")
+
+	certificate, name, err := waitForCertificate(client, string(certificateUUID))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to fetch certificate")
+		return err
+	}
+
+	certificateOutfile := ctx.String(certificateOutfileFlag.Name)
+	if certificateOutfile == "" {
+		certificateOutfile = fmt.Sprintf("%s.crt", name)
+	}
+
+	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
+}
+
+func waitForCertificate(client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+	certReady := make(chan interface{}, 1)
+
+	go func() {
+		for {
+			certificate, name, err = fetchCertificate(client, certificateUUID)
+			if err != nil {
+				logrus.WithError(err).Debug("Failed to fetch certificate")
+				time.Sleep(FETCH_DELAY_SEC * time.Second)
+				continue
+			}
+
+			certReady <- nil
+			return
+		}
+	}()
+
+	select {
+	case <-certReady:
+	case <-time.After(FETCH_TIMEOUT_SEC * time.Second):
+		err = errors.New("timed out waiting for certificate")
+	}
+
+	return certificate, name, nil
 }

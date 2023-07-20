@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/shurcooL/graphql"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/xcnt/drivr-certificate-client/api"
@@ -64,44 +65,52 @@ func fetchCertificateAction(ctx *cli.Context) error {
 		return errors.New("invalid certificate UUID")
 	}
 
-	return fetchCertificate(apiURL.String(), ctx.String(APIKeyFlag.Name), certificateUUID, ctx.String(certificateOutfileFlag.Name))
-}
-
-func fetchCertificate(apiURL, apiKey, certificateUUID, certificateOutfile string) error {
-	var query api.FetchCertificateQuery
-
-	client, err := api.NewClient(apiURL, apiKey)
+	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize GraphQL client")
 		return err
 	}
-	err = client.Query(context.TODO(), &query, map[string]interface{}{
-		"uuid": certificateUUID,
-	})
+	certificate, name, err := fetchCertificate(client, certificateUUID)
 	if err != nil {
-		logrus.WithField("certificate_uuid", certificateUUID).WithError(err).Error("Failed to query certificate")
+		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err
 	}
 
-	if query.FetchCertificate.Certificate == "" {
-		logrus.WithField("certificate_uuid", certificateUUID).Error("Certificate not yet signed")
-		return err
-	}
-
-	certificate, err := base64.RawStdEncoding.DecodeString(string(query.FetchCertificate.Certificate))
-	if err != nil {
-		logrus.WithError(err).Error("Failed to decode certificate")
-		return err
-	}
-
+	certificateOutfile := ctx.String(certificateOutfileFlag.Name)
 	if certificateOutfile == "" {
-		certificateOutfile = fmt.Sprintf("%s.crt", string(query.FetchCertificate.Name))
+		certificateOutfile = fmt.Sprintf("%s.crt", name)
 	}
-	err = cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
-	if err != nil {
+	if err = cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile); err != nil {
 		logrus.WithField("filename", certificateOutfile).WithError(err).Error("Failed to write certificate to file")
 		return err
 	}
 
 	return nil
+}
+
+func fetchCertificate(client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+	var query api.FetchCertificateQuery
+
+	err = client.Query(context.TODO(), &query, map[string]interface{}{
+		"uuid": certificateUUID,
+	})
+	if err != nil {
+		logrus.WithField("certificate_uuid", certificateUUID).WithError(err).Error("Failed to query certificate")
+		return nil, "", err
+	}
+
+	if query.FetchCertificate.Certificate == "" {
+		logrus.WithField("certificate_uuid", certificateUUID).Error("Certificate not yet signed")
+		return nil, "", err
+	}
+
+	name = string(query.FetchCertificate.Name)
+
+	certificate, err = base64.RawStdEncoding.DecodeString(string(query.FetchCertificate.Certificate))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to decode certificate")
+		return nil, "", err
+	}
+	return certificate, name, nil
+
 }
