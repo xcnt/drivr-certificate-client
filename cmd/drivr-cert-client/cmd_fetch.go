@@ -42,7 +42,7 @@ func fetchCertificateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "certificate",
 		Usage:  "Fetch a certificate",
-		Action: fetchCertificate,
+		Action: fetchCertificateAction,
 		Flags: []cli.Flag{
 			certificateUUIDFlag,
 			APIKeyFlag,
@@ -51,16 +51,10 @@ func fetchCertificateCommand() *cli.Command {
 	}
 }
 
-func fetchCertificate(ctx *cli.Context) error {
+func fetchCertificateAction(ctx *cli.Context) error {
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
-		return err
-	}
-
-	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
-	if err != nil {
-		logrus.WithError(err).Error("Failed to initialize GraphQL client")
 		return err
 	}
 
@@ -70,8 +64,17 @@ func fetchCertificate(ctx *cli.Context) error {
 		return errors.New("invalid certificate UUID")
 	}
 
+	return fetchCertificate(apiURL.String(), ctx.String(APIKeyFlag.Name), certificateUUID, ctx.String(certificateOutfileFlag.Name))
+}
+
+func fetchCertificate(apiURL, apiKey, certificateUUID, certificateOutfile string) error {
 	var query api.FetchCertificateQuery
 
+	client, err := api.NewClient(apiURL, apiKey)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to initialize GraphQL client")
+		return err
+	}
 	err = client.Query(context.TODO(), &query, map[string]interface{}{
 		"uuid": certificateUUID,
 	})
@@ -91,13 +94,12 @@ func fetchCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	certOutfile := ctx.String(certificateOutfileFlag.Name)
-	if certOutfile == "" {
-		certOutfile = fmt.Sprintf("%s.crt", string(query.FetchCertificate.Name))
+	if certificateOutfile == "" {
+		certificateOutfile = fmt.Sprintf("%s.crt", string(query.FetchCertificate.Name))
 	}
-	err = cert.WriteToPEMFile(cert.Certificate, certificate, certOutfile)
+	err = cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
 	if err != nil {
-		logrus.WithField("filename", certOutfile).WithError(err).Error("Failed to write certificate to file")
+		logrus.WithField("filename", certificateOutfile).WithError(err).Error("Failed to write certificate to file")
 		return err
 	}
 
