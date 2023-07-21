@@ -38,9 +38,9 @@ API URL and key can also be exported via the environment variables `DRIVR_GRAPHQ
 
 ### Fetch certificate
 
-Fetch a requested certificate for a specific device:
+Fetch a requested certificate for a specific device identified by its uuid:
 
-    `drivr-certificate-client fetch certificate -n <devicename> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
+    `drivr-certificate-client fetch certificate --uuid <device uuid> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
 
 API URL and key can also be exported via the environment variables `DRIVR_GRAPHQL_API` and `DRIVR_API_KEY`.
 
