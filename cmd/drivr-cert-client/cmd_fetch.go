@@ -42,7 +42,7 @@ func fetchCertificateCommand() *cli.Command {
 		Action: fetchCertificateAction,
 		Flags: []cli.Flag{
 			certificateUUIDFlag,
-			APIKeyFlag,
+			apiKeyFlag,
 			graphqlAPIFlag,
 		},
 	}
@@ -61,7 +61,7 @@ func fetchCertificateAction(ctx *cli.Context) error {
 		return errors.New("invalid certificate UUID")
 	}
 
-	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
+	client, err := api.NewClient(apiURL.String(), ctx.String(apiKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize GraphQL client")
 		return err

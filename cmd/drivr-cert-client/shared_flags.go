@@ -3,7 +3,7 @@ package main
 import "github.com/urfave/cli/v2"
 
 var (
-	APIKeyFlag = &cli.StringFlag{
+	apiKeyFlag = &cli.StringFlag{
 		Name:    "api-key",
 		Usage:   "Static API key for authenticating requests.",
 		Value:   "",

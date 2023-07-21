@@ -96,7 +96,7 @@ func certificateCommand() *cli.Command {
 		Action: createCertificate,
 		Flags: []cli.Flag{
 			privKeyInfileFlag,
-			APIKeyFlag,
+			apiKeyFlag,
 			clientNameFlag,
 			graphqlAPIFlag,
 			certificateOutfileFlag,
@@ -144,7 +144,7 @@ func createCertificate(ctx *cli.Context) error {
 	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
 	logrus.Debug("Initializing GraphQL client")
-	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
+	client, err := api.NewClient(apiURL.String(), ctx.String(apiKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create GraphQL client")
 		return err
