@@ -21,4 +21,8 @@ var (
 		Required: true,
 		EnvVars:  []string{"DRIVR_GRAPHQL_API"},
 	}
+	certificateOutfileFlag = &cli.StringFlag{
+		Name:  "cert-outfile",
+		Usage: "Certificate output file",
+	}
 )

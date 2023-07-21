@@ -16,10 +16,6 @@ import (
 )
 
 var (
-	certificateOutfileFlag = &cli.StringFlag{
-		Name:  "cert-outfile",
-		Usage: "Certificate output file",
-	}
 	certificateUUIDFlag = &cli.StringFlag{
 		Name:     "uuid",
 		Usage:    "Certificate UUID",

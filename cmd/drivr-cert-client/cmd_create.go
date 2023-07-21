@@ -99,6 +99,7 @@ func certificateCommand() *cli.Command {
 			APIKeyFlag,
 			clientNameFlag,
 			graphqlAPIFlag,
+			certificateOutfileFlag,
 		},
 	}
 }
