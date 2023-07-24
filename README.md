@@ -16,7 +16,7 @@ It can be used to:
 The drivr-certificate-client provides shell completion for bash and zsh.
 
 Enable completion for the current zsh shell run:
-    - `source <(drivr-certificate-client completion --shell zsh)`
+    - `source <(drivr-cert-client completion --shell zsh)`
 
 ### Generate key-pair
 
@@ -32,7 +32,7 @@ You can specify different output files with the `--privkey-outfile` and `--pubke
 
 Create a certificate for a device running:
 
-    `drivr-certificate-client create certificate -n <devicename> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
+    `drivr-cert-client create certificate -n <devicename> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
 
 API URL and key can also be exported via the environment variables `DRIVR_GRAPHQL_API` and `DRIVR_API_KEY`.
 
@@ -40,7 +40,7 @@ API URL and key can also be exported via the environment variables `DRIVR_GRAPHQ
 
 Fetch a requested certificate for a specific device identified by its uuid:
 
-    `drivr-certificate-client fetch certificate --uuid <device uuid> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
+    `drivr-cert-client fetch certificate --uuid <device uuid> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
 
 API URL and key can also be exported via the environment variables `DRIVR_GRAPHQL_API` and `DRIVR_API_KEY`.
 
