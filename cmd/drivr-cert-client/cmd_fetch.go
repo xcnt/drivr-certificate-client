@@ -23,7 +23,7 @@ var (
 	}
 )
 
-var uUIDRegexp = regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$`)
+var uuidRegexp = regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$`)
 
 func fetchCommand() *cli.Command {
 	return &cli.Command{
@@ -56,7 +56,7 @@ func fetchCertificateAction(ctx *cli.Context) error {
 	}
 
 	certificateUUID := ctx.String(certificateUUIDFlag.Name)
-	if !uUIDRegexp.MatchString(certificateUUID) {
+	if !uuidRegexp.MatchString(certificateUUID) {
 		logrus.WithField("certificate_uuid", certificateUUID).Error("Invalid certificate UUID")
 		return errors.New("invalid certificate UUID")
 	}
