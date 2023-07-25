@@ -19,3 +19,9 @@
 
 # Go workspace file
 go.work
+
+# Binary
+/drivr-cert-client
+
+# key files
+*.key
