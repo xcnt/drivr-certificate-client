@@ -14,5 +14,5 @@ type FetchCertificateQuery struct {
 	FetchCertificate struct {
 		Name        graphql.String
 		Certificate graphql.String
-	} `graphql:"fetchCertificate(uuid: $uuid)"`
+	} `graphql:"certificate(uuid: $uuid)"`
 }
