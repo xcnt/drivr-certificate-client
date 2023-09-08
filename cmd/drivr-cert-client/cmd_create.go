@@ -133,7 +133,7 @@ func fetchIssuerUUID(client *graphql.Client, issuer string) (*uuid.UUID, error) 
 
 	if len(query.FetchIssuer.Items) != 1 {
 		logrus.WithField("issuer", issuer).Error("Issuer not found")
-		return nil, err
+		return nil, errors.New("Issuer not found")
 	}
 
 	uuidStr := string(query.FetchIssuer.Items[0].Uuid)
