@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shurcooL/graphql"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -118,31 +119,43 @@ func certificateCommand() *cli.Command {
 	}
 }
 
-func fetchIssuerUUID(client *graphql.Client, issuer string) (uuid string, err error) {
+func fetchIssuerUUID(client *graphql.Client, issuer string) (*uuid.UUID, error) {
 	var query api.FetchIssuerUUIDQuery
 
-	err = client.Query(context.TODO(), &query, map[string]interface{}{
+	err := client.Query(context.TODO(), &query, map[string]interface{}{
 		"name": graphql.String(issuer),
 	})
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Error("Failed to query issuer")
-		return "", err
+		return nil, err
 	}
 
 	if len(query.FetchIssuer.Items) != 1 {
 		logrus.WithField("issuer", issuer).Error("Issuer not found")
-		return "", err
+		return nil, err
 	}
 
-	return string(query.FetchIssuer.Items[0].Uuid), nil
+	uuidStr := string(query.FetchIssuer.Items[0].Uuid)
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		logrus.WithField("issuer_uuid", uuidStr).WithError(err).Error("Failed to parse issuer UUID")
+		return nil, err
+	}
 
+	return &uuid, nil
 }
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
 	duration := ctx.Int(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
-	entityUUID := ctx.String(entityUuidFlag.Name)
+	entityUUIDstr := ctx.String(entityUuidFlag.Name)
+
+	entityUUID, err := uuid.Parse(entityUUIDstr)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse entity UUID")
+		return err
+	}
 
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
@@ -192,12 +205,17 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
+	// help the graphql client to determine the correct type
+	type UUID string
+	gqlUUID := UUID(entityUUID.String())
+	gqlIssuerUUID := UUID(issuerUUID.String())
+
 	vars := map[string]interface{}{
-		"issuerUuid": graphql.String(issuerUUID),
+		"issuerUuid": gqlIssuerUUID,
 		"name":       graphql.String(name),
 		"csr":        graphql.String(base64CSR),
 		"duration":   graphql.Int(duration),
-		"entityUuid": graphql.String(entityUUID),
+		"entityUuid": gqlUUID,
 	}
 
 	logrus.WithFields(logrus.Fields{
