@@ -97,7 +97,7 @@ func fetchCertificate(client *graphql.Client, certificateUUID string) (certifica
 
 	if query.FetchCertificate.Certificate == "" {
 		logrus.WithField("certificate_uuid", certificateUUID).Error("Certificate not yet signed")
-		return nil, "", err
+		return nil, "", errors.New("Certificate not yet signed")
 	}
 
 	name = string(query.FetchCertificate.Name)
