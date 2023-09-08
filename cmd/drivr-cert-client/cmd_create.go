@@ -47,11 +47,11 @@ var (
 		Aliases: []string{"u"},
 		Usage:   "Output file for the generated public key",
 	}
-	certificateDurationFlag = &cli.IntFlag{
+	certificateDurationFlag = &cli.StringFlag{
 		Name:    "duration",
 		Aliases: []string{"d"},
-		Usage:   "Duration of the certificate in days",
-		Value:   365,
+		Usage:   "Duration of the certificate in ISO 8601 format",
+		Value:   "P365D",
 	}
 	entityUuidFlag = &cli.StringFlag{
 		Name:     "entity-uuid",
@@ -115,6 +115,7 @@ func certificateCommand() *cli.Command {
 			certificateOutfileFlag,
 			requiredIssuerFlag,
 			entityUuidFlag,
+			certificateDurationFlag,
 		},
 	}
 }
@@ -147,7 +148,7 @@ func fetchIssuerUUID(client *graphql.Client, issuer string) (*uuid.UUID, error) 
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
-	duration := ctx.Int(certificateDurationFlag.Name)
+	duration := ctx.String(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
 	entityUUIDstr := ctx.String(entityUuidFlag.Name)
 
@@ -210,11 +211,14 @@ func createCertificate(ctx *cli.Context) error {
 	gqlUUID := UUID(entityUUID.String())
 	gqlIssuerUUID := UUID(issuerUUID.String())
 
+	type Timespan string
+	gqlDuration := Timespan(duration)
+
 	vars := map[string]interface{}{
 		"issuerUuid": gqlIssuerUUID,
 		"name":       graphql.String(name),
 		"csr":        graphql.String(base64CSR),
-		"duration":   graphql.Int(duration),
+		"duration":   gqlDuration,
 		"entityUuid": gqlUUID,
 	}
 
