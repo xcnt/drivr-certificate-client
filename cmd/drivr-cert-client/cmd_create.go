@@ -37,7 +37,7 @@ var (
 	}
 	privKeyInfileFlag = &cli.StringFlag{
 		Name:    "privkey-infile",
-		Aliases: []string{"i"},
+		Aliases: []string{"p"},
 		Usage:   "Input file containing private key to sign certificate request",
 		Value:   PRIVATE_KEY_FILE,
 	}
