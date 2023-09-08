@@ -38,6 +38,11 @@ var (
 		Aliases: []string{"a"},
 		Usage:   "CA certificate file",
 	}
+	issuerFlag = &cli.StringFlag{
+		Name:    "issuer",
+		Aliases: []string{"i"},
+		Usage:   "Issuer of the certificate",
+	}
 )
 
 func validateCommand() *cli.Command {

@@ -52,6 +52,12 @@ var (
 		Usage:   "Duration of the certificate in days",
 		Value:   365,
 	}
+	requiredIssuerFlag = &cli.StringFlag{
+		Name:     "issuer",
+		Aliases:  []string{"i"},
+		Usage:    "Issuer of the certificate",
+		Required: true,
+	}
 )
 
 func createCommand() *cli.Command {
@@ -100,7 +106,7 @@ func certificateCommand() *cli.Command {
 			clientNameFlag,
 			graphqlAPIFlag,
 			certificateOutfileFlag,
-			issuerFlag,
+			requiredIssuerFlag,
 		},
 	}
 }
