@@ -6,7 +6,7 @@ import (
 
 type CreateCertificateMutation struct {
 	CreateCertificate struct {
-		UUID graphql.String
+		Uuid graphql.String
 	} `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr, entityUuid: $entityUuid)"`
 }
 

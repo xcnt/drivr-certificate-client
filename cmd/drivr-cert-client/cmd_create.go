@@ -238,7 +238,7 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	certificateUUID := mutation.CreateCertificate.UUID
+	certificateUUID := mutation.CreateCertificate.Uuid
 
 	logrus.WithField("certificate_uuid", string(certificateUUID)).Debug("Certificate requested")
 
