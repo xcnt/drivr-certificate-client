@@ -232,7 +232,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	var mutation api.CreateCertificateMutation
 
-	err = client.Mutate(context.TODO(), mutation, vars)
+	err = client.Mutate(context.TODO(), &mutation, vars)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
 		return err
