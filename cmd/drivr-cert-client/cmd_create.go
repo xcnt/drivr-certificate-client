@@ -52,6 +52,12 @@ var (
 		Usage:   "Duration of the certificate in days",
 		Value:   365,
 	}
+	entityUuidFlag = &cli.StringFlag{
+		Name:     "entity-uuid",
+		Aliases:  []string{"e"},
+		Usage:    "UUID of the entity to create the certificate for",
+		Required: true,
+	}
 	requiredIssuerFlag = &cli.StringFlag{
 		Name:     "issuer",
 		Aliases:  []string{"i"},
@@ -107,6 +113,7 @@ func certificateCommand() *cli.Command {
 			graphqlAPIFlag,
 			certificateOutfileFlag,
 			requiredIssuerFlag,
+			entityUuidFlag,
 		},
 	}
 }
@@ -135,6 +142,7 @@ func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
 	duration := ctx.Int(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
+	entityUUID := ctx.String(entityUuidFlag.Name)
 
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
@@ -189,6 +197,7 @@ func createCertificate(ctx *cli.Context) error {
 		"name":       graphql.String(name),
 		"csr":        graphql.String(base64CSR),
 		"duration":   graphql.Int(duration),
+		"entityUuid": graphql.String(entityUUID),
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -196,6 +205,7 @@ func createCertificate(ctx *cli.Context) error {
 		"name":       name,
 		"csr":        base64CSR,
 		"duration":   duration,
+		"entityUuid": entityUUID,
 	}).Debug("Calling GraphQL API")
 
 	var mutation api.CreateCertificateMutation
