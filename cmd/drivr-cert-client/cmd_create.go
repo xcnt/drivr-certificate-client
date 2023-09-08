@@ -207,12 +207,10 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	// help the graphql client to determine the correct type
-	type UUID string
-	gqlUUID := UUID(entityUUID.String())
-	gqlIssuerUUID := UUID(issuerUUID.String())
+	gqlUUID := api.UUID(entityUUID.String())
+	gqlIssuerUUID := api.UUID(issuerUUID.String())
 
-	type Timespan string
-	gqlDuration := Timespan(duration)
+	gqlDuration := api.Timespan(duration)
 
 	vars := map[string]interface{}{
 		"issuerUuid": gqlIssuerUUID,
