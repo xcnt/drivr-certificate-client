@@ -38,11 +38,6 @@ var (
 		Aliases: []string{"a"},
 		Usage:   "CA certificate file",
 	}
-	issuerFlag = &cli.StringFlag{
-		Name:    "issuer",
-		Aliases: []string{"i"},
-		Usage:   "Issuer of the certificate",
-	}
 )
 
 func validateCommand() *cli.Command {
@@ -91,7 +86,7 @@ func fetchCA(client *graphql.Client, issuer string) (ca []byte, err error) {
 	var query api.FetchCaQuery
 
 	err = client.Query(context.TODO(), &query, map[string]interface{}{
-		"name": issuer,
+		"name": graphql.String(issuer),
 	})
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Error("Failed to query CA")

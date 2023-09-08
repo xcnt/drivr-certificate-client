@@ -25,4 +25,9 @@ var (
 		Name:  "cert-outfile",
 		Usage: "Certificate output file",
 	}
+	issuerFlag = &cli.StringFlag{
+		Name:    "issuer",
+		Aliases: []string{"i"},
+		Usage:   "Issuer of the certificate",
+	}
 )

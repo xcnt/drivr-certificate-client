@@ -100,13 +100,35 @@ func certificateCommand() *cli.Command {
 			clientNameFlag,
 			graphqlAPIFlag,
 			certificateOutfileFlag,
+			issuerFlag,
 		},
 	}
+}
+
+func fetchIssuerUUID(client *graphql.Client, issuer string) (uuid string, err error) {
+	var query api.FetchIssuerUUIDQuery
+
+	err = client.Query(context.TODO(), &query, map[string]interface{}{
+		"name": graphql.String(issuer),
+	})
+	if err != nil {
+		logrus.WithField("issuer", issuer).WithError(err).Error("Failed to query issuer")
+		return "", err
+	}
+
+	if len(query.FetchIssuer.Items) != 1 {
+		logrus.WithField("issuer", issuer).Error("Issuer not found")
+		return "", err
+	}
+
+	return string(query.FetchIssuer.Items[0].Uuid), nil
+
 }
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
 	duration := ctx.Int(certificateDurationFlag.Name)
+	issuer := ctx.String(issuerFlag.Name)
 
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
@@ -150,16 +172,24 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
+	issuerUUID, err := fetchIssuerUUID(client, issuer)
+	if err != nil {
+		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
+		return err
+	}
+
 	vars := map[string]interface{}{
-		"name":     name,
-		"csr":      base64CSR,
-		"duration": duration,
+		"issuerUuid": graphql.String(issuerUUID),
+		"name":       graphql.String(name),
+		"csr":        graphql.String(base64CSR),
+		"duration":   graphql.Int(duration),
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"name":     name,
-		"csr":      base64CSR,
-		"duration": duration,
+		"issuerUuid": issuerUUID,
+		"name":       name,
+		"csr":        base64CSR,
+		"duration":   duration,
 	}).Debug("Calling GraphQL API")
 
 	var mutation api.CreateCertificateMutation
