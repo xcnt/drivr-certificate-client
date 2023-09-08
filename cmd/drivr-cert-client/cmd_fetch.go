@@ -88,7 +88,7 @@ func fetchCertificate(client *graphql.Client, certificateUUID string) (certifica
 	var query api.FetchCertificateQuery
 
 	err = client.Query(context.TODO(), &query, map[string]interface{}{
-		"uuid": graphql.String(certificateUUID),
+		"uuid": api.UUID(certificateUUID),
 	})
 	if err != nil {
 		logrus.WithField("certificate_uuid", certificateUUID).WithError(err).Error("Failed to query certificate")
