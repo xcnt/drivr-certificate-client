@@ -17,6 +17,14 @@ type FetchCertificateQuery struct {
 	} `graphql:"certificate(uuid: $uuid)"`
 }
 
+type FetchIssuerUUIDQuery struct {
+	FetchIssuer struct {
+		Items []struct {
+			Uuid graphql.String
+		}
+	} `graphql:"issuers(where: {name: {_eq: $name}}, limit: 1)"`
+}
+
 type FetchCaQuery struct {
 	FetchCa struct {
 		Items []struct {
