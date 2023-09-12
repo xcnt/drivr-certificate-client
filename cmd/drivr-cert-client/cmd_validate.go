@@ -53,7 +53,7 @@ func validateCommand() *cli.Command {
 		Flags: []cli.Flag{
 			APIKeyFlag,
 			graphqlAPIFlag,
-			privKeyInfileFlag,
+			privateKeyInfileFlag,
 			certificateInfileFlag,
 			mqttBrokerFlag,
 			mqttBrokerPortFlag,
@@ -153,7 +153,7 @@ func validateCertificate(ctx *cli.Context) error {
 		}
 	}
 
-	privKeyFile := ctx.String(privKeyInfileFlag.Name)
+	privKeyFile := ctx.String(privateKeyInfileFlag.Name)
 	certificateFile := ctx.String(certificateInfileFlag.Name)
 	mqttBroker := ctx.String(mqttBrokerFlag.Name)
 	mqttBrokerPort := ctx.Int(mqttBrokerPortFlag.Name)

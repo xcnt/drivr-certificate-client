@@ -30,20 +30,20 @@ var (
 		Usage:   "Number of bits for the key",
 		Value:   2048,
 	}
-	privKeyOutfileFlag = &cli.StringFlag{
-		Name:    "privkey-outfile",
+	privateKeyOutfileFlag = &cli.StringFlag{
+		Name:    "private-key-outfile",
 		Aliases: []string{"o"},
 		Usage:   "Output file for the generated private key",
 		Value:   PRIVATE_KEY_FILE,
 	}
-	privKeyInfileFlag = &cli.StringFlag{
-		Name:    "privkey-infile",
+	privateKeyInfileFlag = &cli.StringFlag{
+		Name:    "private-key-infile",
 		Aliases: []string{"p"},
 		Usage:   "Input file containing private key to sign certificate request",
 		Value:   PRIVATE_KEY_FILE,
 	}
-	pubKeyOutfileFlag = &cli.StringFlag{
-		Name:    "pubkey-outfile",
+	publicKeyOutfileFlag = &cli.StringFlag{
+		Name:    "public-key-outfile",
 		Aliases: []string{"u"},
 		Usage:   "Output file for the generated public key",
 	}
@@ -84,15 +84,15 @@ func keyPairCommand() *cli.Command {
 		Action: createKeyPair,
 		Flags: []cli.Flag{
 			keyBitsFlag,
-			privKeyOutfileFlag,
-			pubKeyOutfileFlag,
+			privateKeyOutfileFlag,
+			publicKeyOutfileFlag,
 		},
 	}
 }
 
 func createKeyPair(ctx *cli.Context) error {
-	privateKeyOutfile := ctx.String(privKeyOutfileFlag.Name)
-	publicKeyOutfile := ctx.String(pubKeyOutfileFlag.Name)
+	privateKeyOutfile := ctx.String(privateKeyOutfileFlag.Name)
+	publicKeyOutfile := ctx.String(publicKeyOutfileFlag.Name)
 
 	if privateKeyOutfile == publicKeyOutfile {
 		return fmt.Errorf("Private key and public key output file cannot be the same")
@@ -107,7 +107,7 @@ func certificateCommand() *cli.Command {
 		Usage:  "Create a new certificate",
 		Action: createCertificate,
 		Flags: []cli.Flag{
-			privKeyInfileFlag,
+			privateKeyInfileFlag,
 			APIKeyFlag,
 			clientNameFlag,
 			graphqlAPIFlag,
@@ -169,7 +169,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	// load private key
-	privateKeyFile := ctx.String(privKeyInfileFlag.Name)
+	privateKeyFile := ctx.String(privateKeyInfileFlag.Name)
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		logrus.Info("Private key file does not exist - generating new key pair")
