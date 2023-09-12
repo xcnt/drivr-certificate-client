@@ -54,10 +54,9 @@ var (
 		Value:   "P365D",
 	}
 	entityUuidFlag = &cli.StringFlag{
-		Name:     "entity-uuid",
-		Aliases:  []string{"e"},
-		Usage:    "UUID of the entity to create the certificate for",
-		Required: true,
+		Name:    "entity-uuid",
+		Aliases: []string{"e"},
+		Usage:   "UUID of the entity to create the certificate for",
 	}
 	requiredIssuerFlag = &cli.StringFlag{
 		Name:     "issuer",
@@ -152,10 +151,15 @@ func createCertificate(ctx *cli.Context) error {
 	issuer := ctx.String(issuerFlag.Name)
 	entityUUIDstr := ctx.String(entityUuidFlag.Name)
 
-	entityUUID, err := uuid.Parse(entityUUIDstr)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to parse entity UUID")
-		return err
+	var err error
+	var entityUUID uuid.UUID
+
+	if entityUUIDstr != "" {
+		entityUUID, err = uuid.Parse(entityUUIDstr)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to parse entity UUID")
+			return err
+		}
 	}
 
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
@@ -207,7 +211,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	// help the graphql client to determine the correct type
-	gqlUUID := api.UUID(entityUUID.String())
+	gqlEntityUUID := api.UUID(entityUUID.String())
 	gqlIssuerUUID := api.UUID(issuerUUID.String())
 
 	gqlDuration := api.Timespan(duration)
@@ -217,7 +221,12 @@ func createCertificate(ctx *cli.Context) error {
 		"name":       graphql.String(name),
 		"csr":        graphql.String(base64CSR),
 		"duration":   gqlDuration,
-		"entityUuid": gqlUUID,
+	}
+
+	if entityUUID == uuid.Nil {
+		vars["entityUuid"] = map[string]interface{}{
+			"entityUuid": gqlEntityUUID,
+		}
 	}
 
 	logrus.WithFields(logrus.Fields{
