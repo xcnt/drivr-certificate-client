@@ -66,7 +66,7 @@ func fetchCertificateAction(ctx *cli.Context) error {
 		logrus.WithError(err).Error("Failed to initialize GraphQL client")
 		return err
 	}
-	certificate, name, err := fetchCertificate(client, certificateUUID)
+	certificate, name, err := fetchCertificate(ctx.Context, client, certificateUUID)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err
@@ -84,10 +84,10 @@ func fetchCertificateAction(ctx *cli.Context) error {
 	return nil
 }
 
-func fetchCertificate(client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+func fetchCertificate(ctx context.Context, client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
 	var query api.FetchCertificateQuery
 
-	err = client.Query(context.TODO(), &query, map[string]interface{}{
+	err = client.Query(ctx, &query, map[string]interface{}{
 		"uuid": api.UUID(certificateUUID),
 	})
 	if err != nil {

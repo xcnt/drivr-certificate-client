@@ -87,10 +87,10 @@ func newTLSConfig(caCert []byte, clientCert, clientPrivateKey string) (*tls.Conf
 	}, nil
 }
 
-func fetchCA(client *graphql.Client, issuer string) (ca []byte, err error) {
+func fetchCA(ctx context.Context, client *graphql.Client, issuer string) (ca []byte, err error) {
 	var query api.FetchCaQuery
 
-	err = client.Query(context.TODO(), &query, map[string]interface{}{
+	err = client.Query(ctx, &query, map[string]interface{}{
 		"name": graphql.String(issuer),
 	})
 	if err != nil {
@@ -111,13 +111,13 @@ func fetchCA(client *graphql.Client, issuer string) (ca []byte, err error) {
 	return ca, nil
 }
 
-func getCaCert(apiURL, apiKey, issuer string) ([]byte, error) {
+func getCaCert(ctx context.Context, issuer, apiURL, apiKey string) ([]byte, error) {
 	client, err := api.NewClient(apiURL, apiKey)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize GraphQL client")
 		return nil, err
 	}
-	ca, err := fetchCA(client, issuer)
+	ca, err := fetchCA(ctx, client, issuer)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return nil, err
@@ -141,7 +141,7 @@ func validateCertificate(ctx *cli.Context) error {
 		if issuer == "" || apiURL == nil {
 			return fmt.Errorf("either %s or %s and %s must be specified", caCertInfileFlag.Name, issuerFlag.Name, graphqlAPIFlag.Name)
 		}
-		cacert, err = getCaCert(issuer, apiURL.String(), ctx.String(APIKeyFlag.Name))
+		cacert, err = getCaCert(ctx.Context, issuer, apiURL.String(), ctx.String(APIKeyFlag.Name))
 		if err != nil {
 			return err
 		}

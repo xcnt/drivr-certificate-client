@@ -119,10 +119,10 @@ func certificateCommand() *cli.Command {
 	}
 }
 
-func fetchIssuerUUID(client *graphql.Client, issuer string) (*uuid.UUID, error) {
+func fetchIssuerUUID(ctx context.Context, client *graphql.Client, issuer string) (*uuid.UUID, error) {
 	var query api.FetchIssuerUUIDQuery
 
-	err := client.Query(context.TODO(), &query, map[string]interface{}{
+	err := client.Query(ctx, &query, map[string]interface{}{
 		"name": graphql.String(issuer),
 	})
 	if err != nil {
@@ -204,7 +204,7 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	issuerUUID, err := fetchIssuerUUID(client, issuer)
+	issuerUUID, err := fetchIssuerUUID(ctx.Context, client, issuer)
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
 		return err
@@ -239,7 +239,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	var mutation api.CreateCertificateMutation
 
-	err = client.Mutate(context.TODO(), &mutation, vars)
+	err = client.Mutate(ctx.Context, &mutation, vars)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
 		return err
@@ -249,7 +249,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	logrus.WithField("certificate_uuid", string(certificateUUID)).Debug("Certificate requested")
 
-	certificate, name, err := waitForCertificate(client, string(certificateUUID))
+	certificate, name, err := waitForCertificate(ctx.Context, client, string(certificateUUID))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err
@@ -263,12 +263,14 @@ func createCertificate(ctx *cli.Context) error {
 	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
 }
 
-func waitForCertificate(client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+func waitForCertificate(ctx context.Context, client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, FETCH_TIMEOUT_SEC*time.Second)
+	defer cancel()
 	certReady := make(chan interface{}, 1)
 
 	go func() {
 		for {
-			certificate, name, err = fetchCertificate(client, certificateUUID)
+			certificate, name, err = fetchCertificate(timeoutCtx, client, certificateUUID)
 			if err != nil {
 				logrus.WithError(err).Debug("Failed to fetch certificate")
 				time.Sleep(FETCH_DELAY_SEC * time.Second)
@@ -282,9 +284,9 @@ func waitForCertificate(client *graphql.Client, certificateUUID string) (certifi
 
 	select {
 	case <-certReady:
-	case <-time.After(FETCH_TIMEOUT_SEC * time.Second):
+	case <-timeoutCtx.Done():
 		err = errors.New("timed out waiting for certificate")
 	}
 
-	return certificate, name, nil
+	return certificate, name, err
 }
