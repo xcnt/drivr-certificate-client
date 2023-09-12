@@ -169,7 +169,7 @@ func validateCertificate(ctx *cli.Context) error {
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		return (token.Error())
+		return token.Error()
 	}
 	return nil
 }
