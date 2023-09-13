@@ -41,7 +41,7 @@ func injectLoggingTransport(c *http.Client) {
 	c.Transport = &loggingTransport{c.Transport}
 }
 
-func NewClient(apiURL, apiToken string) (*graphql.Client, error) {
+func newClient(apiURL, apiToken string) (*graphql.Client, error) {
 	var httpClient *http.Client
 
 	if apiToken != "" {
@@ -67,7 +67,7 @@ type DrivrAPI struct {
 }
 
 func NewDrivrAPI(apiURL, apiToken string) (*DrivrAPI, error) {
-	client, err := NewClient(apiURL, apiToken)
+	client, err := newClient(apiURL, apiToken)
 	if err != nil {
 		return nil, err
 	}
