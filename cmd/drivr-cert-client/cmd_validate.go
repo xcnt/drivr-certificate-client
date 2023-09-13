@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/shurcooL/graphql"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/xcnt/drivr-certificate-client/api"
@@ -87,39 +85,15 @@ func newTLSConfig(caCert []byte, clientCert, clientPrivateKey string) (*tls.Conf
 	}, nil
 }
 
-func fetchCA(ctx context.Context, client *graphql.Client, issuer string) (ca []byte, err error) {
-	var query api.FetchCaQuery
-
-	err = client.Query(ctx, &query, map[string]interface{}{
-		"name": graphql.String(issuer),
-	})
-	if err != nil {
-		logrus.WithField("issuer", issuer).WithError(err).Error("Failed to query CA")
-		return nil, err
-	}
-
-	if query.FetchCa.Items[0].Ca == "" {
-		logrus.WithField("issuer", issuer).Error("No CA found for issuer")
-		return nil, err
-	}
-
-	ca, err = base64.RawStdEncoding.DecodeString(string(query.FetchCa.Items[0].Ca))
-	if err != nil {
-		logrus.WithError(err).Error("Failed to decode ca certificate")
-		return nil, err
-	}
-	return ca, nil
-}
-
 func getCaCert(ctx context.Context, issuer, apiURL, apiKey string) ([]byte, error) {
-	client, err := api.NewClient(apiURL, apiKey)
+	api, err := api.NewDrivrAPI(apiURL, apiKey)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to initialize GraphQL client")
+		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
 		return nil, err
 	}
-	ca, err := fetchCA(ctx, client, issuer)
+	ca, err := api.FetchCertificateAuthority(ctx, issuer)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to fetch certificate")
+		logrus.WithError(err).Error("Failed to fetch certificate authority")
 		return nil, err
 	}
 
