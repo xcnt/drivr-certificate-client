@@ -4,21 +4,29 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+type Certificate struct {
+	Uuid graphql.String
+}
+
+type CertificateWithName struct {
+	Name        graphql.String
+	Certificate graphql.String
+}
+
 type CreateCertificateMutation struct {
-	CreateCertificate struct {
-		Uuid graphql.String
-	} `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr, entityUuid: $entityUuid)"`
+	Certificate `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr)"`
+}
+
+type CreateCertificateWithEntityMutation struct {
+	Certificate `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr, entityUuid: $entityUuid)"`
 }
 
 type FetchCertificateQuery struct {
-	FetchCertificate struct {
-		Name        graphql.String
-		Certificate graphql.String
-	} `graphql:"certificate(uuid: $uuid)"`
+	CertificateWithName `graphql:"certificate(uuid: $uuid)"`
 }
 
 type FetchIssuerUUIDQuery struct {
-	FetchIssuer struct {
+	Issuer struct {
 		Items []struct {
 			Uuid graphql.String
 		}
@@ -26,7 +34,7 @@ type FetchIssuerUUIDQuery struct {
 }
 
 type FetchCaQuery struct {
-	FetchCa struct {
+	CA struct {
 		Items []struct {
 			Ca graphql.String
 		}
