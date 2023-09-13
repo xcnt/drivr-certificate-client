@@ -16,16 +16,17 @@ type loggingTransport struct {
 }
 
 func (s *loggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	bytes, _ := httputil.DumpRequestOut(r, true)
-
+	reqBytes, _ := httputil.DumpRequestOut(r, true)
+	fmt.Printf("%s\n", reqBytes)
+	fmt.Println("==============")
 	resp, err := s.wrapped.RoundTrip(r)
 	// err is returned after dumping the response
 
 	respBytes, _ := httputil.DumpResponse(resp, true)
-	bytes = append(bytes, respBytes...)
+	fmt.Printf("%s\n", respBytes)
+	fmt.Println("==============")
 
-	fmt.Printf("%s\n", bytes)
-	logrus.WithField("request", string(bytes)).Debug("sending requesting to graphql server")
+	logrus.WithField("request", string(reqBytes)).WithField("response", string(respBytes)).Debug("sending request to graphql server")
 
 	return resp, err
 }
