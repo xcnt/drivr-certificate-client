@@ -173,7 +173,7 @@ func createCertificate(ctx *cli.Context) error {
 	logrus.Debug("Initializing DRIVR API Client")
 	drivrAPI, err := api.NewDrivrAPI(apiURL.String(), ctx.String(APIKeyFlag.Name))
 	if err != nil {
-		logrus.WithError(err).Error("Failed to create Drivr API client")
+		logrus.WithError(err).Error("Failed to create DRIVR API client")
 		return err
 	}
 
