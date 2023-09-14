@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/shurcooL/graphql"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/xcnt/drivr-certificate-client/api"
@@ -29,28 +29,39 @@ var (
 		Usage:   "Number of bits for the key",
 		Value:   2048,
 	}
-	privKeyOutfileFlag = &cli.StringFlag{
-		Name:    "privkey-outfile",
+	privateKeyOutfileFlag = &cli.StringFlag{
+		Name:    "private-key-outfile",
 		Aliases: []string{"o"},
 		Usage:   "Output file for the generated private key",
 		Value:   PRIVATE_KEY_FILE,
 	}
-	privKeyInfileFlag = &cli.StringFlag{
-		Name:    "privkey-infile",
-		Aliases: []string{"i"},
+	privateKeyInfileFlag = &cli.StringFlag{
+		Name:    "private-key-infile",
+		Aliases: []string{"p"},
 		Usage:   "Input file containing private key to sign certificate request",
 		Value:   PRIVATE_KEY_FILE,
 	}
-	pubKeyOutfileFlag = &cli.StringFlag{
-		Name:    "pubkey-outfile",
+	publicKeyOutfileFlag = &cli.StringFlag{
+		Name:    "public-key-outfile",
 		Aliases: []string{"u"},
 		Usage:   "Output file for the generated public key",
 	}
-	certificateDurationFlag = &cli.IntFlag{
+	certificateDurationFlag = &cli.StringFlag{
 		Name:    "duration",
 		Aliases: []string{"d"},
-		Usage:   "Duration of the certificate in days",
-		Value:   365,
+		Usage:   "Duration of the certificate in ISO 8601 format",
+		Value:   "P365D",
+	}
+	entityUuidFlag = &cli.StringFlag{
+		Name:    "entity-uuid",
+		Aliases: []string{"e"},
+		Usage:   "UUID of the entity to create the certificate for",
+	}
+	requiredIssuerFlag = &cli.StringFlag{
+		Name:     "issuer",
+		Aliases:  []string{"i"},
+		Usage:    "Issuer of the certificate",
+		Required: true,
 	}
 )
 
@@ -72,15 +83,15 @@ func keyPairCommand() *cli.Command {
 		Action: createKeyPair,
 		Flags: []cli.Flag{
 			keyBitsFlag,
-			privKeyOutfileFlag,
-			pubKeyOutfileFlag,
+			privateKeyOutfileFlag,
+			publicKeyOutfileFlag,
 		},
 	}
 }
 
 func createKeyPair(ctx *cli.Context) error {
-	privateKeyOutfile := ctx.String(privKeyOutfileFlag.Name)
-	publicKeyOutfile := ctx.String(pubKeyOutfileFlag.Name)
+	privateKeyOutfile := ctx.String(privateKeyOutfileFlag.Name)
+	publicKeyOutfile := ctx.String(publicKeyOutfileFlag.Name)
 
 	if privateKeyOutfile == publicKeyOutfile {
 		return fmt.Errorf("Private key and public key output file cannot be the same")
@@ -95,18 +106,34 @@ func certificateCommand() *cli.Command {
 		Usage:  "Create a new certificate",
 		Action: createCertificate,
 		Flags: []cli.Flag{
-			privKeyInfileFlag,
+			privateKeyInfileFlag,
 			APIKeyFlag,
 			clientNameFlag,
 			graphqlAPIFlag,
 			certificateOutfileFlag,
+			requiredIssuerFlag,
+			entityUuidFlag,
+			certificateDurationFlag,
 		},
 	}
 }
 
 func createCertificate(ctx *cli.Context) error {
 	name := ctx.String(clientNameFlag.Name)
-	duration := ctx.Int(certificateDurationFlag.Name)
+	duration := ctx.String(certificateDurationFlag.Name)
+	issuer := ctx.String(issuerFlag.Name)
+	entityUUIDstr := ctx.String(entityUuidFlag.Name)
+
+	var err error
+	var entityUUID uuid.UUID
+
+	if entityUUIDstr != "" {
+		entityUUID, err = uuid.Parse(entityUUIDstr)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to parse entity UUID")
+			return err
+		}
+	}
 
 	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
 	if err != nil {
@@ -115,7 +142,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	// load private key
-	privateKeyFile := ctx.String(privKeyInfileFlag.Name)
+	privateKeyFile := ctx.String(privateKeyInfileFlag.Name)
 
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		logrus.Info("Private key file does not exist - generating new key pair")
@@ -143,38 +170,41 @@ func createCertificate(ctx *cli.Context) error {
 
 	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
-	logrus.Debug("Initializing GraphQL client")
-	client, err := api.NewClient(apiURL.String(), ctx.String(APIKeyFlag.Name))
+	logrus.Debug("Initializing DRIVR API Client")
+	drivrAPI, err := api.NewDrivrAPI(apiURL.String(), ctx.String(APIKeyFlag.Name))
 	if err != nil {
-		logrus.WithError(err).Error("Failed to create GraphQL client")
+		logrus.WithError(err).Error("Failed to create DRIVR API client")
 		return err
 	}
 
-	vars := map[string]interface{}{
-		"name":     name,
-		"csr":      base64CSR,
-		"duration": duration,
+	issuerUUID, err := drivrAPI.FetchIssuerUUID(ctx.Context, issuer)
+	if err != nil {
+		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
+		return err
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"name":     name,
-		"csr":      base64CSR,
-		"duration": duration,
-	}).Debug("Calling GraphQL API")
+		"issuerUuid": issuerUUID,
+		"name":       name,
+		"csr":        base64CSR,
+		"duration":   duration,
+		"entityUuid": entityUUID,
+	}).Debug("Calling DRIVR API")
 
-	var mutation api.CreateCertificateMutation
+	var certificateUUID *uuid.UUID
+	if entityUUID == uuid.Nil {
+		certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, name, base64CSR, duration)
+	} else {
+		certificateUUID, err = drivrAPI.CreateCertificateWithEntity(ctx.Context, issuerUUID, &entityUUID, name, base64CSR, duration)
+	}
 
-	err = client.Mutate(context.TODO(), mutation, vars)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
 		return err
 	}
+	logrus.WithField("certificate_uuid", certificateUUID.String()).Debug("Certificate requested")
 
-	certificateUUID := mutation.CreateCertificate.UUID
-
-	logrus.WithField("certificate_uuid", string(certificateUUID)).Debug("Certificate requested")
-
-	certificate, name, err := waitForCertificate(client, string(certificateUUID))
+	certificate, name, err := waitForCertificate(ctx.Context, drivrAPI, certificateUUID)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err
@@ -188,12 +218,14 @@ func createCertificate(ctx *cli.Context) error {
 	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
 }
 
-func waitForCertificate(client *graphql.Client, certificateUUID string) (certificate []byte, name string, err error) {
+func waitForCertificate(ctx context.Context, api *api.DrivrAPI, certificateUUID *uuid.UUID) (certificate []byte, name string, err error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, FETCH_TIMEOUT_SEC*time.Second)
+	defer cancel()
 	certReady := make(chan interface{}, 1)
 
 	go func() {
 		for {
-			certificate, name, err = fetchCertificate(client, certificateUUID)
+			certificate, name, err = api.FetchCertificate(timeoutCtx, certificateUUID)
 			if err != nil {
 				logrus.WithError(err).Debug("Failed to fetch certificate")
 				time.Sleep(FETCH_DELAY_SEC * time.Second)
@@ -207,9 +239,9 @@ func waitForCertificate(client *graphql.Client, certificateUUID string) (certifi
 
 	select {
 	case <-certReady:
-	case <-time.After(FETCH_TIMEOUT_SEC * time.Second):
+	case <-timeoutCtx.Done():
 		err = errors.New("timed out waiting for certificate")
 	}
 
-	return certificate, name, nil
+	return certificate, name, err
 }

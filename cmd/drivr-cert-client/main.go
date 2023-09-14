@@ -45,6 +45,7 @@ func main() {
 			fetchCommand(),
 			completionCommand(),
 			dumpCommand(),
+			validateCommand(),
 		},
 		Version: Version,
 	}

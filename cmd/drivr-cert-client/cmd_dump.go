@@ -25,10 +25,10 @@ func dumpCommand() *cli.Command {
 		Usage: "dump public key",
 		Flags: []cli.Flag{
 			dumpPubKeyOutfileFlag,
-			privKeyInfileFlag,
+			privateKeyInfileFlag,
 		},
 		Action: func(c *cli.Context) error {
-			privKey, err := cert.LoadPrivateKey(c.String(privKeyInfileFlag.Name))
+			privKey, err := cert.LoadPrivateKey(c.String(privateKeyInfileFlag.Name))
 			if err != nil {
 				logrus.WithError(err).Error("failed to load private key")
 				return err
