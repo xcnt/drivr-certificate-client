@@ -1,0 +1,363 @@
+name: ci
+
+on: [push, workflow_dispatch]
+
+jobs:
+  select-runner-deployment:
+    name: select-runner-deployment
+    runs-on: default
+    outputs:
+      runner: ${{ env.RUNNER_DEPLOYMENT }}
+    steps:
+      - run: echo "RUNNER_DEPLOYMENT=default" >> $GITHUB_ENV
+      - run: echo "RUNNER_DEPLOYMENT=renovate" >> $GITHUB_ENV
+        if: startsWith(github.ref, 'refs/heads/renovate')
+
+  docker:
+    needs: [select-runner-deployment]
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    steps:
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - name: Docker meta publish
+        id: docker_meta_publish
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client
+      - name: Create Docker Context
+        run: docker context create buildx || true
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: buildx
+          config-inline: |
+            [registry."docker.io"]
+              mirrors = ["ci-registry.drivr.dev"]
+      - name: Build
+        id: docker_build
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ steps.docker_meta.outputs.buildTags }}
+          target: builder
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.CI_AUTH_TOKEN }}
+            VERSION=${{ env.GITHUB_SHA }}
+          platforms: "linux/amd64" # Do only build per default in amd64, releases build arm
+          cache-from: type=registry,ref=${{ steps.docker_meta.outputs.cacheTag }}
+          cache-to: type=inline
+
+  lint:
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    needs: [select-runner-deployment, docker]
+    steps:
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - uses: actions/checkout@v3
+      - name: Patch files
+        run: |
+          sed -i '/target:/d' docker-compose.yml
+          sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
+      - name: Bootup Docker Compose
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          command: docker-compose -f docker-compose.yml up -d
+      - name: Run linter
+        run: |
+          docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app golangci-lint run
+
+  tests:
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    needs: [select-runner-deployment, docker]
+    steps:
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - uses: actions/checkout@v3
+      - name: Patch files
+        run: |
+          sed -i '/target:/d' docker-compose.yml
+          sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
+      - name: Bootup Docker Compose
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          command: docker-compose -f docker-compose.yml up -d
+      - name: Run Unit Tests
+        run: |
+          docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app go test ./...
+
+  vulnerability-check:
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    needs: [select-runner-deployment, docker]
+    steps:
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - uses: actions/checkout@v3
+      - name: Patch files
+        run: |
+          sed -i '/target:/d' docker-compose.yml
+          sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
+      - name: Bootup Docker Compose
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          command: docker-compose -f docker-compose.yml up -d
+      - name: Check for vulnerabilities
+        run: |
+          docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app go install golang.org/x/vuln/cmd/govulncheck@latest
+          docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app govulncheck ./...
+
+  publish-to-docker:
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    needs:
+      - select-runner-deployment
+      - lint
+      - tests
+      - vulnerability-check
+    steps:
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - name: Docker meta publish
+        id: docker_meta_publish
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - name: Create Docker Context
+        run: docker context create buildx || true
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: buildx
+          config-inline: |
+            [registry."docker.io"]
+              mirrors = ["ci-registry.drivr.dev"]
+      - name: Build
+        id: docker_build
+        uses: docker/build-push-action@v3
+        with:
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.docker_meta_publish.outputs.tags }}
+          labels: ${{ steps.docker_meta_publish.outputs.labels }}
+          cache-from: type=registry,ref=${{ steps.docker_meta.outputs.buildTag }}
+          cache-to: type=inline
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.CI_AUTH_TOKEN }}
+            VERSION=${{ env.GITHUB_SHA }}
+      - name: Get current PR
+        uses: 8BitJonny/gh-get-current-pr@2.1.0
+        continue-on-error: true
+        id: pr
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          filterOutClosed: true
+      - name: Get docker image comment
+        uses: peter-evans/find-comment@v2
+        continue-on-error: true
+        id: comment
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Docker images
+      - name: Post docker images to comment
+        uses: peter-evans/create-or-update-comment@v2
+        continue-on-error: true
+        with:
+          comment-id: ${{ steps.comment.outputs.comment-id }}
+          issue-number: ${{ steps.pr.outputs.number }}
+          body: |
+            ## Docker images
+            ```
+            ${{ steps.docker_meta_publish.outputs.tags }}
+            ```
+            :recycle: This comment has been updated with latest results.
+          edit-mode: replace
+
+  release:
+    name: "Release"
+    needs:
+      - select-runner-deployment
+      - publish-to-docker
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    concurrency: release
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_REGISTRY_SECRET }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v3
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - name: Docker meta publish
+        id: docker_meta_publish
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v2
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - name: Create Docker Context
+        run: docker context create buildx || true
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: buildx
+          config-inline: |
+            [registry."docker.io"]
+              mirrors = ["ci-registry.drivr.dev"]
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Add plugin for conventional commits
+        run: npm install conventional-changelog-conventionalcommits
+        working-directory: ./.github/workflows
+      - name: Release to GitHub
+        working-directory: ./.github/workflows
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_AUTH_TOKEN }}
+          GIT_AUTHOR_NAME: XCNT CI
+          GIT_AUTHOR_EMAIL: dev-infra@xcnt.io
+          GIT_COMMITTER_NAME: XCNT CI
+          GIT_COMMITTER_EMAIL: dev-infra@xcnt.io
+        run: npx semantic-release
+      - name: Set env
+        run: echo "RELEASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" >> $GITHUB_ENV
+      - name: Publish Tagged Docker Image
+        id: docker_publish
+        # Do not fail on a tag not being set as this can happen with chore releases. Just do not do anything else then.
+        if: ${{ env.RELEASE_VERSION != '' }}
+        uses: docker/build-push-action@v3
+        with:
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client:${{ env.RELEASE_VERSION }}
+            ${{ steps.docker_meta_publish.outputs.tags }}
+          labels: ${{ steps.docker_meta_publish.outputs.labels }}
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.CI_AUTH_TOKEN }}
+            VERSION=${{ env.GITHUB_SHA }}
+          platforms: linux/amd64, linux/arm64
+          cache-from: type=registry,ref=${{ steps.docker_meta.outputs.buildTag }}
+          cache-to: type=inline
