@@ -1,0 +1,14 @@
+version: "3.2"
+
+services:
+  app:
+    build:
+      target: builder
+    user: root
+    entrypoint:
+      - tail
+      - -f
+      - /dev/null
+    volumes:
+      - ".:/opt/app"
+    environment: {}
