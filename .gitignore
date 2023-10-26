@@ -25,3 +25,6 @@ go.work
 
 # key files
 *.key
+
+# distribution files
+dist/
