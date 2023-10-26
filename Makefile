@@ -11,5 +11,8 @@ format:
 lint: format
 	golangci-lint run
 
+release: build
+	goreleaser --snapshot --clean
+
 .PHONY: build format lint
 .DEFAULT_GOAL := drivr-cert-client

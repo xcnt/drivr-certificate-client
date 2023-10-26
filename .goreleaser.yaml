@@ -1,0 +1,5 @@
+builds:
+- main: ./cmd/drivr-cert-client
+  goarch:
+  - amd64
+  - arm64
