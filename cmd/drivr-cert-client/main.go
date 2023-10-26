@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Version      = "dev"
+	version      = "dev"
 	logLevelFlag = &cli.StringFlag{
 		Name:    "log-level",
 		Usage:   "Minimum level of log events which should be displayed.",
@@ -47,7 +47,7 @@ func main() {
 			dumpCommand(),
 			validateCommand(),
 		},
-		Version: Version,
+		Version: version,
 	}
 
 	if err := app.Run(os.Args); err != nil {
