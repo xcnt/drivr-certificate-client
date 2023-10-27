@@ -107,9 +107,9 @@ func certificateCommand() *cli.Command {
 		Action: createCertificate,
 		Flags: []cli.Flag{
 			privateKeyInfileFlag,
-			APIKeyFlag,
+			drivrAPIKeyFlag,
 			clientNameFlag,
-			graphqlAPIFlag,
+			drivrAPIURLFlag,
 			certificateOutfileFlag,
 			requiredIssuerFlag,
 			entityUuidFlag,
@@ -135,7 +135,7 @@ func createCertificate(ctx *cli.Context) error {
 		}
 	}
 
-	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
+	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err
@@ -171,7 +171,7 @@ func createCertificate(ctx *cli.Context) error {
 	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
 	logrus.Debug("Initializing DRIVR API Client")
-	drivrAPI, err := api.NewDrivrAPI(apiURL.String(), ctx.String(APIKeyFlag.Name))
+	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create DRIVR API client")
 		return err

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/shurcooL/graphql"
@@ -41,15 +42,21 @@ func injectLoggingTransport(c *http.Client) {
 	c.Transport = &loggingTransport{c.Transport}
 }
 
-func newClient(apiURL, apiToken string) (*graphql.Client, error) {
+func newClient(apiURL url.URL, apiToken string) (*graphql.Client, error) {
 	var httpClient *http.Client
 
-	if apiToken != "" {
-		src := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: apiToken},
-		)
-		httpClient = oauth2.NewClient(context.Background(), src)
+	if apiToken == "" {
+		clientID, clientSecret, err := getOAuthCredentials()
+		if err != nil {
+			return nil, err
+		}
+		apiToken = oauthFlow(apiURL, clientID, clientSecret)
 	}
+
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: apiToken},
+	)
+	httpClient = oauth2.NewClient(context.Background(), src)
 
 	if logrus.GetLevel() == logrus.DebugLevel {
 		if httpClient == nil {
@@ -58,7 +65,10 @@ func newClient(apiURL, apiToken string) (*graphql.Client, error) {
 		injectLoggingTransport(httpClient)
 	}
 
-	client := graphql.NewClient(apiURL, httpClient)
+	graphQLURL := apiURL.JoinPath("graphql")
+
+	logrus.WithField("graphql_url", graphQLURL.String()).Debug("init graphql client")
+	client := graphql.NewClient(graphQLURL.String(), httpClient)
 	return client, nil
 }
 
@@ -66,8 +76,8 @@ type DrivrAPI struct {
 	client *graphql.Client
 }
 
-func NewDrivrAPI(apiURL, apiToken string) (*DrivrAPI, error) {
-	client, err := newClient(apiURL, apiToken)
+func NewDrivrAPI(apiURL *url.URL, apiToken string) (*DrivrAPI, error) {
+	client, err := newClient(*apiURL, apiToken)
 	if err != nil {
 		return nil, err
 	}
