@@ -49,8 +49,8 @@ func validateCommand() *cli.Command {
 		Usage:  "Validate a certificate",
 		Action: validateCertificate,
 		Flags: []cli.Flag{
-			APIKeyFlag,
-			graphqlAPIFlag,
+			drivrAPIKeyFlag,
+			drivrAPIURLFlag,
 			privateKeyInfileFlag,
 			certificateInfileFlag,
 			mqttBrokerFlag,
@@ -85,7 +85,7 @@ func newTLSConfig(caCert []byte, clientCert, clientPrivateKey string) (*tls.Conf
 	}, nil
 }
 
-func getCaCert(ctx context.Context, issuer, apiURL, apiKey string) ([]byte, error) {
+func getCaCert(ctx context.Context, issuer string, apiURL *url.URL, apiKey string) ([]byte, error) {
 	api, err := api.NewDrivrAPI(apiURL, apiKey)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
@@ -107,15 +107,15 @@ func validateCertificate(ctx *cli.Context) error {
 
 	if cacertfile == "" {
 		issuer := ctx.String(issuerFlag.Name)
-		apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
+		apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
 		if err != nil {
 			logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 			return err
 		}
 		if issuer == "" || apiURL == nil {
-			return fmt.Errorf("either %s or %s and %s must be specified", caCertInfileFlag.Name, issuerFlag.Name, graphqlAPIFlag.Name)
+			return fmt.Errorf("either %s or %s and %s must be specified", caCertInfileFlag.Name, issuerFlag.Name, drivrAPIURLFlag.Name)
 		}
-		cacert, err = getCaCert(ctx.Context, issuer, apiURL.String(), ctx.String(APIKeyFlag.Name))
+		cacert, err = getCaCert(ctx.Context, issuer, apiURL, ctx.String(drivrAPIKeyFlag.Name))
 		if err != nil {
 			return err
 		}

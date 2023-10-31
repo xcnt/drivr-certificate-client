@@ -37,14 +37,14 @@ func fetchCertificateCommand() *cli.Command {
 		Action: fetchCertificate,
 		Flags: []cli.Flag{
 			certificateUUIDFlag,
-			APIKeyFlag,
-			graphqlAPIFlag,
+			drivrAPIKeyFlag,
+			drivrAPIURLFlag,
 		},
 	}
 }
 
 func fetchCertificate(ctx *cli.Context) error {
-	apiURL, err := url.Parse(ctx.String(graphqlAPIFlag.Name))
+	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err
@@ -57,7 +57,7 @@ func fetchCertificate(ctx *cli.Context) error {
 		return errors.New("invalid certificate UUID")
 	}
 
-	drivrAPI, err := api.NewDrivrAPI(apiURL.String(), ctx.String(APIKeyFlag.Name))
+	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
 		return err

@@ -3,11 +3,9 @@ package main
 import "github.com/urfave/cli/v2"
 
 var (
-	APIKeyFlag = &cli.StringFlag{
-		Name:    "api-key",
-		Usage:   "Static API key for authenticating requests.",
-		Value:   "",
-		EnvVars: []string{"DRIVR_API_KEY"},
+	certificateOutfileFlag = &cli.StringFlag{
+		Name:  "cert-outfile",
+		Usage: "Certificate output file",
 	}
 	clientNameFlag = &cli.StringFlag{
 		Name:     "client-name",
@@ -15,14 +13,16 @@ var (
 		Usage:    "Name of the client to create the certificate for",
 		Required: true,
 	}
-	graphqlAPIFlag = &cli.StringFlag{
-		Name:     "graphql-api",
-		Usage:    "URL of the GraphQL API",
+	drivrAPIURLFlag = &cli.StringFlag{
+		Name:     "drivr-api",
+		Usage:    "DRIVR API URL",
 		Required: true,
-		EnvVars:  []string{"DRIVR_GRAPHQL_API"},
+		EnvVars:  []string{"DRIVR_API_URL"},
 	}
-	certificateOutfileFlag = &cli.StringFlag{
-		Name:  "cert-outfile",
-		Usage: "Certificate output file",
+	drivrAPIKeyFlag = &cli.StringFlag{
+		Name:    "api-key",
+		Usage:   "Static API key for authenticating requests.",
+		Value:   "",
+		EnvVars: []string{"DRIVR_API_KEY"},
 	}
 )
