@@ -84,6 +84,10 @@ func callBackHandler(w http.ResponseWriter, r *http.Request) {
 
 	apiToken = token.AccessToken
 	tokenReady <- nil
+	_, err = w.Write([]byte("<html lang=\"en\"><body>You can <a href=\"#\" onclick=\"window.close();\">close</a> this window now.</body></html>"))
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to write response")
+	}
 }
 
 func open(url string) error {
