@@ -155,19 +155,16 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	logrus.WithField("common_name", name).Debug("Generating CSR")
-	csr, err := cert.CreateCSR(privKey, name)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to generate CSR")
-		return err
-	}
-
-	base64CSR := base64.StdEncoding.EncodeToString(csr)
-
 	logrus.Debug("Initializing DRIVR API Client")
 	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create DRIVR API client")
+		return err
+	}
+
+	domainUUID, err := drivrAPI.FetchDomainUUID(ctx.Context)
+	if err != nil {
+		logrus.WithError(err).Debug("Failed to fetch current domain")
 		return err
 	}
 
@@ -176,6 +173,16 @@ func createCertificate(ctx *cli.Context) error {
 		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
 		return err
 	}
+
+	cn := fmt.Sprintf("%s@%s", name, domainUUID.String())
+	logrus.WithField("common_name", cn).Debug("Generating CSR")
+	csr, err := cert.CreateCSR(privKey, cn)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to generate CSR")
+		return err
+	}
+
+	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
 	logrus.WithFields(logrus.Fields{
 		"issuerUuid": issuerUUID,
