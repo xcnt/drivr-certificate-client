@@ -40,3 +40,9 @@ type FetchCaQuery struct {
 		}
 	} `graphql:"issuers(where: {name: {_eq: $name}}, limit: 1)"`
 }
+
+type FetchDomainUUIDQuery struct {
+	CurrentDomain struct {
+		Uuid graphql.String
+	}
+}

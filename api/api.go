@@ -165,6 +165,25 @@ func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID
 	return &uuid, nil
 }
 
+func (d *DrivrAPI) FetchDomainUUID(ctx context.Context) (*uuid.UUID, error) {
+	var query FetchDomainUUIDQuery
+
+	err := d.client.Query(ctx, &query, nil)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to query domain")
+		return nil, err
+	}
+
+	uuidStr := string(query.CurrentDomain.Uuid)
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		logrus.WithField("domain_uuid", uuidStr).WithError(err).Error("Failed to parse domain UUID")
+		return nil, err
+	}
+
+	return &uuid, nil
+}
+
 func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
 	var mutation CreateCertificateMutation
 
