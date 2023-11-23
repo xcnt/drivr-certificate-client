@@ -1,6 +1,6 @@
 # drivr-certificate-client
 
-The drivr-certificate-client is a commandline interface to DRIVR's device certificate managment.
+The drivr-certificate-client is a commandline interface to DRIVR's device certificate management.
 It can be used to:
     - generate an RSA key-pair (private/public)
     - request a certificate for a device from DRIVR
@@ -16,34 +16,20 @@ It can be used to:
 The drivr-certificate-client provides shell completion for bash and zsh.
 
 Enable completion for the current zsh shell run:
-    - `source <(drivr-cert-client completion --shell zsh)`
-
-### Generate key-pair
-
-Generate a private and a public key via:
-
-    `drivr-cert-client create keypair`.
-
-This will create two files `private.key` and `public.key`. 
-
-You can specify different output files with the `--privkey-outfile` and `--pubkey-outfile` arguments.
+    - `source <(drivr-certificate-client completion --shell zsh)`
 
 ### Create certificate
 
 Create a certificate for a device running:
 
-    `drivr-cert-client create certificate -n <devicename> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
-
-API URL and key can also be exported via the environment variables `DRIVR_GRAPHQL_API` and `DRIVR_API_KEY`.
+    `drivr-certificate-client create certificate -n <devicename> --drivr-api <URL to the DRIVR API>` 
 
 ### Fetch certificate
 
 Fetch a requested certificate for a specific device identified by its uuid:
 
-    `drivr-cert-client fetch certificate --uuid <device uuid> --graphql-api <URL to the GraphQL API> --api-key <API Bearer token>`
-
-API URL and key can also be exported via the environment variables `DRIVR_GRAPHQL_API` and `DRIVR_API_KEY`.
+    `drivr-certificate-client fetch certificate --uuid <device uuid> --drivr-api <URL to the DRIVR API>`
 
 ## Debugging
 
-Enable debug output globally via the commandline argument `--log-level debug`
+Enable debug output via passing `--log-level debug` to `drivr-certificate-client`.
