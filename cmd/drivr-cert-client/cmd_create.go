@@ -52,11 +52,6 @@ var (
 		Usage:   "Duration of the certificate in ISO 8601 format",
 		Value:   "P365D",
 	}
-	entityUuidFlag = &cli.StringFlag{
-		Name:    "entity-uuid",
-		Aliases: []string{"e"},
-		Usage:   "UUID of the entity to create the certificate for",
-	}
 )
 
 func createCommand() *cli.Command {
@@ -102,32 +97,31 @@ func certificateCommand() *cli.Command {
 		Flags: []cli.Flag{
 			privateKeyInfileFlag,
 			drivrAPIKeyFlag,
-			clientNameFlag,
+			systemCodeFlag,
+			componentCodeFlag,
 			drivrAPIURLFlag,
 			certificateOutfileFlag,
 			requiredIssuerFlag,
-			entityUuidFlag,
 			certificateDurationFlag,
 		},
 	}
 }
 
 func createCertificate(ctx *cli.Context) error {
-	name := ctx.String(clientNameFlag.Name)
+	systemCode := ctx.String(systemCodeFlag.Name)
+	componentCode := ctx.String(componentCodeFlag.Name)
 	duration := ctx.String(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
-	entityUUIDstr := ctx.String(entityUuidFlag.Name)
+
+	if systemCode == "" && componentCode == "" {
+		return errors.New("Either system code or component code must be specified")
+	}
+
+	if systemCode != "" && componentCode != "" {
+		return errors.New("Either system code or component code must be specified, not both")
+	}
 
 	var err error
-	var entityUUID uuid.UUID
-
-	if entityUUIDstr != "" {
-		entityUUID, err = uuid.Parse(entityUUIDstr)
-		if err != nil {
-			logrus.WithError(err).Error("Failed to parse entity UUID")
-			return err
-		}
-	}
 
 	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
 	if err != nil {
@@ -168,13 +162,34 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
+	var entityUUID *uuid.UUID
+	if systemCode != "" {
+		entityUUID, err = drivrAPI.FetchSystemUUID(ctx.Context, systemCode)
+		if err != nil {
+			logrus.WithField("code", systemCode).WithError(err).Debug("Failed to fetch system")
+			return err
+		}
+	} else {
+		entityUUID, err = drivrAPI.FetchComponentUUID(ctx.Context, componentCode)
+		if err != nil {
+			logrus.WithField("code", componentCode).WithError(err).Debug("Failed to fetch component")
+			return err
+		}
+	}
+
 	issuerUUID, err := drivrAPI.FetchIssuerUUID(ctx.Context, issuer)
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
 		return err
 	}
 
-	cn := fmt.Sprintf("%s@%s", name, domainUUID.String())
+	var code string
+	if systemCode != "" {
+		code = systemCode
+	} else {
+		code = componentCode
+	}
+	cn := fmt.Sprintf("%s@%s", code, domainUUID.String())
 	logrus.WithField("common_name", cn).Debug("Generating CSR")
 	csr, err := cert.CreateCSR(privKey, cn)
 	if err != nil {
@@ -186,18 +201,14 @@ func createCertificate(ctx *cli.Context) error {
 
 	logrus.WithFields(logrus.Fields{
 		"issuerUuid": issuerUUID,
-		"name":       name,
+		"cn":         cn,
 		"csr":        base64CSR,
 		"duration":   duration,
 		"entityUuid": entityUUID,
 	}).Debug("Calling DRIVR API")
 
 	var certificateUUID *uuid.UUID
-	if entityUUID == uuid.Nil {
-		certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, name, base64CSR, duration)
-	} else {
-		certificateUUID, err = drivrAPI.CreateCertificateWithEntity(ctx.Context, issuerUUID, &entityUUID, name, base64CSR, duration)
-	}
+	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, cn, base64CSR, duration)
 
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
@@ -205,7 +216,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 	logrus.WithField("certificate_uuid", certificateUUID.String()).Debug("Certificate requested")
 
-	certificate, name, err := waitForCertificate(ctx.Context, drivrAPI, certificateUUID)
+	certificate, _, err := waitForCertificate(ctx.Context, drivrAPI, certificateUUID)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err
@@ -213,7 +224,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	certificateOutfile := ctx.String(certificateOutfileFlag.Name)
 	if certificateOutfile == "" {
-		certificateOutfile = fmt.Sprintf("%s.crt", name)
+		certificateOutfile = fmt.Sprintf("%s.crt", code)
 	}
 
 	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
