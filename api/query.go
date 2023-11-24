@@ -14,10 +14,6 @@ type CertificateWithName struct {
 }
 
 type CreateCertificateMutation struct {
-	Certificate `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr)"`
-}
-
-type CreateCertificateWithEntityMutation struct {
 	Certificate `graphql:"createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr, entityUuid: $entityUuid)"`
 }
 
@@ -39,4 +35,26 @@ type FetchCaQuery struct {
 			Ca graphql.String
 		}
 	} `graphql:"issuers(where: {name: {_eq: $name}}, limit: 1)"`
+}
+
+type FetchDomainUUIDQuery struct {
+	CurrentDomain struct {
+		Uuid graphql.String
+	}
+}
+
+type FetchSystemUUIDQuery struct {
+	Systems struct {
+		Items []struct {
+			Uuid graphql.String
+		}
+	} `graphql:"systems(where: {code: {_eq: $code}}, limit: 1)"`
+}
+
+type FetchComponentUUIDQuery struct {
+	Components struct {
+		Items []struct {
+			Uuid graphql.String
+		}
+	} `graphql:"components(where: {code: {_eq: $code}}, limit: 1)"`
 }

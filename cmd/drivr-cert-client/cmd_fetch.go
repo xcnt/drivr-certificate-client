@@ -38,7 +38,7 @@ func fetchCertificateAutorityCommand() *cli.Command {
 		Usage:  "Fetch a certificate authority",
 		Action: fetchCertificateAutority,
 		Flags: []cli.Flag{
-			requiredIssuerFlag,
+			issuerFlag,
 			drivrAPIKeyFlag,
 			drivrAPIURLFlag,
 		},
@@ -79,7 +79,7 @@ func fetchCertificateAutority(ctx *cli.Context) error {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err
 	}
-	ca, err := getCaCert(ctx.Context, ctx.String(requiredIssuerFlag.Name), apiURL, ctx.String(drivrAPIKeyFlag.Name))
+	ca, err := getCaCert(ctx.Context, ctx.String(issuerFlag.Name), apiURL, ctx.String(drivrAPIKeyFlag.Name))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch CA certificate")
 		return err

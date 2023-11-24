@@ -1,9 +1,9 @@
 GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
 
-drivr-cert-client: lint $(GOFILES)
-	go build ./cmd/drivr-cert-client
+drivr-certificate-client: lint $(GOFILES)
+	go build -o $@ ./cmd/drivr-cert-client
 
-build: drivr-cert-client
+build: drivr-certificate-client
 
 format:
 	go fmt ./...
@@ -15,4 +15,4 @@ release: build
 	goreleaser --snapshot --clean
 
 .PHONY: build format lint
-.DEFAULT_GOAL := drivr-cert-client
+.DEFAULT_GOAL := build
