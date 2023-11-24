@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"github.com/xcnt/drivr-certificate-client/api"
 )
 
 var (
@@ -83,21 +81,6 @@ func newTLSConfig(caCert []byte, clientCert, clientPrivateKey string) (*tls.Conf
 		InsecureSkipVerify: true,
 		Certificates:       []tls.Certificate{clientKeyPair},
 	}, nil
-}
-
-func getCaCert(ctx context.Context, issuer string, apiURL *url.URL, apiKey string) ([]byte, error) {
-	api, err := api.NewDrivrAPI(apiURL, apiKey)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
-		return nil, err
-	}
-	ca, err := api.FetchCertificateAuthority(ctx, issuer)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to fetch certificate authority")
-		return nil, err
-	}
-
-	return ca, nil
 }
 
 func validateCertificate(ctx *cli.Context) error {

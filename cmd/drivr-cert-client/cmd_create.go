@@ -57,12 +57,6 @@ var (
 		Aliases: []string{"e"},
 		Usage:   "UUID of the entity to create the certificate for",
 	}
-	requiredIssuerFlag = &cli.StringFlag{
-		Name:     "issuer",
-		Aliases:  []string{"i"},
-		Usage:    "Issuer of the certificate",
-		Required: true,
-	}
 )
 
 func createCommand() *cli.Command {

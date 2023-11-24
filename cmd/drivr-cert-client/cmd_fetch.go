@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -26,6 +27,20 @@ func fetchCommand() *cli.Command {
 		Usage: "Fetch certificates from DRIVR",
 		Subcommands: []*cli.Command{
 			fetchCertificateCommand(),
+			fetchCertificateAutorityCommand(),
+		},
+	}
+}
+
+func fetchCertificateAutorityCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "ca",
+		Usage:  "Fetch a certificate authority",
+		Action: fetchCertificateAutority,
+		Flags: []cli.Flag{
+			requiredIssuerFlag,
+			drivrAPIKeyFlag,
+			drivrAPIURLFlag,
 		},
 	}
 }
@@ -41,6 +56,40 @@ func fetchCertificateCommand() *cli.Command {
 			drivrAPIURLFlag,
 		},
 	}
+}
+
+func getCaCert(ctx context.Context, issuer string, apiURL *url.URL, apiKey string) ([]byte, error) {
+	api, err := api.NewDrivrAPI(apiURL, apiKey)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
+		return nil, err
+	}
+	ca, err := api.FetchCertificateAuthority(ctx, issuer)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to fetch certificate authority")
+		return nil, err
+	}
+
+	return ca, nil
+}
+
+func fetchCertificateAutority(ctx *cli.Context) error {
+	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
+		return err
+	}
+	ca, err := getCaCert(ctx.Context, ctx.String(requiredIssuerFlag.Name), apiURL, ctx.String(drivrAPIKeyFlag.Name))
+	if err != nil {
+		logrus.WithError(err).Error("Failed to fetch CA certificate")
+		return err
+	}
+	err = cert.WriteToPEMFile(cert.Certificate, ca, "ca.crt")
+	if err != nil {
+		logrus.WithError(err).Error("Failed writing CA certificate to file")
+		return err
+	}
+	return nil
 }
 
 func fetchCertificate(ctx *cli.Context) error {
