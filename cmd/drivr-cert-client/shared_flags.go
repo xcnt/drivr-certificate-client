@@ -7,11 +7,15 @@ var (
 		Name:  "cert-outfile",
 		Usage: "Certificate output file",
 	}
-	clientNameFlag = &cli.StringFlag{
-		Name:     "client-name",
-		Aliases:  []string{"n"},
-		Usage:    "Name of the client to create the certificate for",
-		Required: true,
+	systemCodeFlag = &cli.StringFlag{
+		Name:    "system-code",
+		Aliases: []string{"s"},
+		Usage:   "Code of the System to create the certificate for",
+	}
+	componentCodeFlag = &cli.StringFlag{
+		Name:    "component-code",
+		Aliases: []string{"c"},
+		Usage:   "Code of the Component to create the certificate for",
 	}
 	drivrAPIURLFlag = &cli.StringFlag{
 		Name:     "drivr-api",
