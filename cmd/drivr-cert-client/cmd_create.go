@@ -101,7 +101,7 @@ func certificateCommand() *cli.Command {
 			componentCodeFlag,
 			drivrAPIURLFlag,
 			certificateOutfileFlag,
-			requiredIssuerFlag,
+			issuerFlag,
 			certificateDurationFlag,
 		},
 	}
