@@ -29,7 +29,7 @@ var (
 		Value:   "",
 		EnvVars: []string{"DRIVR_API_KEY"},
 	}
-	requiredIssuerFlag = &cli.StringFlag{
+	issuerFlag = &cli.StringFlag{
 		Name:    "issuer",
 		Value:   "default",
 		Aliases: []string{"i"},
