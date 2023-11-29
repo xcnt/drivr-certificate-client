@@ -95,6 +95,7 @@ func certificateCommand() *cli.Command {
 		Usage:  "Create a new certificate",
 		Action: createCertificate,
 		Flags: []cli.Flag{
+			nameFlag,
 			privateKeyInfileFlag,
 			drivrAPIKeyFlag,
 			systemCodeFlag,
@@ -108,6 +109,7 @@ func certificateCommand() *cli.Command {
 }
 
 func createCertificate(ctx *cli.Context) error {
+	name := ctx.String(nameFlag.Name)
 	systemCode := ctx.String(systemCodeFlag.Name)
 	componentCode := ctx.String(componentCodeFlag.Name)
 	duration := ctx.String(certificateDurationFlag.Name)
@@ -183,13 +185,7 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	var code string
-	if systemCode != "" {
-		code = systemCode
-	} else {
-		code = componentCode
-	}
-	cn := fmt.Sprintf("%s@%s", code, domainUUID.String())
+	cn := fmt.Sprintf("%s@%s", name, domainUUID.String())
 	logrus.WithField("common_name", cn).Debug("Generating CSR")
 	csr, err := cert.CreateCSR(privKey, cn)
 	if err != nil {
@@ -201,14 +197,14 @@ func createCertificate(ctx *cli.Context) error {
 
 	logrus.WithFields(logrus.Fields{
 		"issuerUuid": issuerUUID,
-		"cn":         cn,
+		"name":       name,
 		"csr":        base64CSR,
 		"duration":   duration,
 		"entityUuid": entityUUID,
 	}).Debug("Calling DRIVR API")
 
 	var certificateUUID *uuid.UUID
-	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, cn, base64CSR, duration)
+	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, name, base64CSR, duration)
 
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
@@ -224,7 +220,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	certificateOutfile := ctx.String(certificateOutfileFlag.Name)
 	if certificateOutfile == "" {
-		certificateOutfile = fmt.Sprintf("%s.crt", code)
+		certificateOutfile = fmt.Sprintf("%s.crt", name)
 	}
 
 	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)

@@ -3,6 +3,12 @@ package main
 import "github.com/urfave/cli/v2"
 
 var (
+	nameFlag = &cli.StringFlag{
+		Name:     "name",
+		Aliases:  []string{"n"},
+		Usage:    "Name of the certificate",
+		Required: true,
+	}
 	certificateOutfileFlag = &cli.StringFlag{
 		Name:  "cert-outfile",
 		Usage: "Certificate output file",
