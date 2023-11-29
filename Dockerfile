@@ -1,4 +1,4 @@
-FROM golang:1.21.3-alpine as builder
+FROM golang:1.21.4-alpine as builder
 
 ARG VERSION
 ARG GITHUB_TOKEN
@@ -15,10 +15,10 @@ RUN apk add --no-cache git && \
 
 COPY ./ /app/
 
-RUN go build -ldflags="-X main.Version=${VERSION:=dev}" ./cmd/drivr-cert-client
+RUN go build -ldflags="-X main.Version=${VERSION:=dev}" ./cmd/drivr-certificate-client
 
 FROM alpine:3.16 as runner
 
-COPY --from=builder /app/drivr-cert-client /usr/local/bin/drivr-cert-client
+COPY --from=builder /app/drivr-certificate-client /usr/local/bin/drivr-certificate-client
 
-ENTRYPOINT ["/usr/local/bin/drivr-cert-client"]
+ENTRYPOINT ["/usr/local/bin/drivr-certificate-client"]

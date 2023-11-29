@@ -52,11 +52,6 @@ var (
 		Usage:   "Duration of the certificate in ISO 8601 format",
 		Value:   "P365D",
 	}
-	entityUuidFlag = &cli.StringFlag{
-		Name:    "entity-uuid",
-		Aliases: []string{"e"},
-		Usage:   "UUID of the entity to create the certificate for",
-	}
 )
 
 func createCommand() *cli.Command {
@@ -100,34 +95,35 @@ func certificateCommand() *cli.Command {
 		Usage:  "Create a new certificate",
 		Action: createCertificate,
 		Flags: []cli.Flag{
+			nameFlag,
 			privateKeyInfileFlag,
 			drivrAPIKeyFlag,
-			clientNameFlag,
+			systemCodeFlag,
+			componentCodeFlag,
 			drivrAPIURLFlag,
 			certificateOutfileFlag,
-			requiredIssuerFlag,
-			entityUuidFlag,
+			issuerFlag,
 			certificateDurationFlag,
 		},
 	}
 }
 
 func createCertificate(ctx *cli.Context) error {
-	name := ctx.String(clientNameFlag.Name)
+	name := ctx.String(nameFlag.Name)
+	systemCode := ctx.String(systemCodeFlag.Name)
+	componentCode := ctx.String(componentCodeFlag.Name)
 	duration := ctx.String(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
-	entityUUIDstr := ctx.String(entityUuidFlag.Name)
+
+	if systemCode == "" && componentCode == "" {
+		return errors.New("Either system code or component code must be specified")
+	}
+
+	if systemCode != "" && componentCode != "" {
+		return errors.New("Either system code or component code must be specified, not both")
+	}
 
 	var err error
-	var entityUUID uuid.UUID
-
-	if entityUUIDstr != "" {
-		entityUUID, err = uuid.Parse(entityUUIDstr)
-		if err != nil {
-			logrus.WithError(err).Error("Failed to parse entity UUID")
-			return err
-		}
-	}
 
 	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
 	if err != nil {
@@ -155,15 +151,6 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	logrus.WithField("common_name", name).Debug("Generating CSR")
-	csr, err := cert.CreateCSR(privKey, name)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to generate CSR")
-		return err
-	}
-
-	base64CSR := base64.StdEncoding.EncodeToString(csr)
-
 	logrus.Debug("Initializing DRIVR API Client")
 	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
 	if err != nil {
@@ -171,11 +158,42 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
+	domainUUID, err := drivrAPI.FetchDomainUUID(ctx.Context)
+	if err != nil {
+		logrus.WithError(err).Debug("Failed to fetch current domain")
+		return err
+	}
+
+	var entityUUID *uuid.UUID
+	if systemCode != "" {
+		entityUUID, err = drivrAPI.FetchSystemUUID(ctx.Context, systemCode)
+		if err != nil {
+			logrus.WithField("code", systemCode).WithError(err).Debug("Failed to fetch system")
+			return err
+		}
+	} else {
+		entityUUID, err = drivrAPI.FetchComponentUUID(ctx.Context, componentCode)
+		if err != nil {
+			logrus.WithField("code", componentCode).WithError(err).Debug("Failed to fetch component")
+			return err
+		}
+	}
+
 	issuerUUID, err := drivrAPI.FetchIssuerUUID(ctx.Context, issuer)
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Debug("Failed to fetch issuer")
 		return err
 	}
+
+	cn := fmt.Sprintf("%s@%s", name, domainUUID.String())
+	logrus.WithField("common_name", cn).Debug("Generating CSR")
+	csr, err := cert.CreateCSR(privKey, cn)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to generate CSR")
+		return err
+	}
+
+	base64CSR := base64.StdEncoding.EncodeToString(csr)
 
 	logrus.WithFields(logrus.Fields{
 		"issuerUuid": issuerUUID,
@@ -186,11 +204,7 @@ func createCertificate(ctx *cli.Context) error {
 	}).Debug("Calling DRIVR API")
 
 	var certificateUUID *uuid.UUID
-	if entityUUID == uuid.Nil {
-		certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, name, base64CSR, duration)
-	} else {
-		certificateUUID, err = drivrAPI.CreateCertificateWithEntity(ctx.Context, issuerUUID, &entityUUID, name, base64CSR, duration)
-	}
+	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, name, base64CSR, duration)
 
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
@@ -198,7 +212,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 	logrus.WithField("certificate_uuid", certificateUUID.String()).Debug("Certificate requested")
 
-	certificate, name, err := waitForCertificate(ctx.Context, drivrAPI, certificateUUID)
+	certificate, _, err := waitForCertificate(ctx.Context, drivrAPI, certificateUUID)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch certificate")
 		return err

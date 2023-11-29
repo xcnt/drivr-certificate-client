@@ -165,27 +165,79 @@ func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID
 	return &uuid, nil
 }
 
-func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
-	var mutation CreateCertificateMutation
+func (d *DrivrAPI) FetchDomainUUID(ctx context.Context) (*uuid.UUID, error) {
+	var query FetchDomainUUIDQuery
 
-	vars := map[string]interface{}{
-		"issuerUuid": NewGraphQLUUID(*issuerUuid),
-		"name":       graphql.String(name),
-		"duration":   NewTimespan(duration),
-		"csr":        graphql.String(csr),
-	}
-
-	err := d.client.Mutate(ctx, &mutation, vars)
+	err := d.client.Query(ctx, &query, nil)
 	if err != nil {
+		logrus.WithError(err).Error("Failed to query domain")
 		return nil, err
 	}
 
-	uuid, err := uuid.Parse(string(mutation.Certificate.Uuid))
-	return &uuid, err
+	uuidStr := string(query.CurrentDomain.Uuid)
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		logrus.WithField("domain_uuid", uuidStr).WithError(err).Error("Failed to parse domain UUID")
+		return nil, err
+	}
+
+	return &uuid, nil
 }
 
-func (d *DrivrAPI) CreateCertificateWithEntity(ctx context.Context, issuerUuid, entityUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
-	var mutation CreateCertificateWithEntityMutation
+func (d *DrivrAPI) FetchSystemUUID(ctx context.Context, code string) (*uuid.UUID, error) {
+	var query FetchSystemUUIDQuery
+
+	err := d.client.Query(ctx, &query, map[string]interface{}{
+		"code": graphql.String(code),
+	})
+	if err != nil {
+		logrus.WithError(err).Error("Failed to query system")
+		return nil, err
+	}
+
+	if len(query.Systems.Items) == 0 {
+		logrus.WithField("system_code", code).Error("System not found")
+		return nil, errors.New("System not found")
+	}
+
+	uuidStr := string(query.Systems.Items[0].Uuid)
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		logrus.WithField("system_uuid", uuidStr).WithError(err).Error("Failed to parse system UUID")
+		return nil, err
+	}
+
+	return &uuid, nil
+}
+
+func (d *DrivrAPI) FetchComponentUUID(ctx context.Context, code string) (*uuid.UUID, error) {
+	var query FetchComponentUUIDQuery
+
+	err := d.client.Query(ctx, &query, map[string]interface{}{
+		"code": graphql.String(code),
+	})
+	if err != nil {
+		logrus.WithError(err).Error("Failed to query component")
+		return nil, err
+	}
+
+	if len(query.Components.Items) == 0 {
+		logrus.WithField("component_code", code).Error("Component not found")
+		return nil, errors.New("Component not found")
+	}
+
+	uuidStr := string(query.Components.Items[0].Uuid)
+	uuid, err := uuid.Parse(uuidStr)
+	if err != nil {
+		logrus.WithField("component_uuid", uuidStr).WithError(err).Error("Failed to parse component UUID")
+		return nil, err
+	}
+
+	return &uuid, nil
+}
+
+func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid, entityUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
+	var mutation CreateCertificateMutation
 
 	vars := map[string]interface{}{
 		"issuerUuid": NewGraphQLUUID(*issuerUuid),
