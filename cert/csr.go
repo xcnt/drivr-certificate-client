@@ -6,11 +6,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+
+	"github.com/google/uuid"
 )
 
-func CreateCSR(privKey *rsa.PrivateKey, name string) ([]byte, error) {
+func CreateCSR(privKey *rsa.PrivateKey) ([]byte, error) {
 	subject := pkix.Name{
-		CommonName: name,
+		CommonName: uuid.New().String(),
 	}
 	var csrTemplate = x509.CertificateRequest{
 		Subject:            subject,

@@ -158,12 +158,6 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	domainUUID, err := drivrAPI.FetchDomainUUID(ctx.Context)
-	if err != nil {
-		logrus.WithError(err).Debug("Failed to fetch current domain")
-		return err
-	}
-
 	var entityUUID *uuid.UUID
 	if systemCode != "" {
 		entityUUID, err = drivrAPI.FetchSystemUUID(ctx.Context, systemCode)
@@ -185,9 +179,7 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	cn := fmt.Sprintf("%s@%s", name, domainUUID.String())
-	logrus.WithField("common_name", cn).Debug("Generating CSR")
-	csr, err := cert.CreateCSR(privKey, cn)
+	csr, err := cert.CreateCSR(privKey)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to generate CSR")
 		return err
