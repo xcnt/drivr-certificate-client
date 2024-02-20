@@ -215,6 +215,7 @@ func createCertificate(ctx *cli.Context) error {
 		certificateOutfile = fmt.Sprintf("%s.crt", name)
 	}
 
+	logrus.Infof("Writing certificate to %s", certificateOutfile)
 	return cert.WriteToPEMFile(cert.Certificate, certificate, certificateOutfile)
 }
 
