@@ -9,7 +9,7 @@ format:
 	go fmt ./...
 
 lint: format
-	golangci-lint run
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:v1.56.2 golangci-lint run -v
 
 release: build
 	goreleaser --snapshot --clean
