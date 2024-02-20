@@ -1,9 +1,9 @@
 GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
 
-drivr-certificate-client: lint $(GOFILES)
+drivr-certificate-client: $(GOFILES)
 	go build -o $@ ./cmd/drivr-certificate-client
 
-build: drivr-certificate-client
+build: lint drivr-certificate-client
 
 format:
 	go fmt ./...
