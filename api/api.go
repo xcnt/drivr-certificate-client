@@ -125,7 +125,7 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 	name := string(query.CertificateWithName.Name)
 
 	if query.CertificateWithName.Certificate == "" {
-		logrus.WithField("certificate_uuid", uuid).Error("Certificate not yet signed")
+		logrus.WithField("certificate_uuid", uuid).Debug("Certificate not yet signed")
 		return nil, name, errors.New("Certificate not yet signed")
 	}
 
