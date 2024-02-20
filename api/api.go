@@ -129,7 +129,7 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 		return nil, name, errors.New("Certificate not yet signed")
 	}
 
-	certificate, err := base64.RawStdEncoding.DecodeString(string(query.CertificateWithName.Certificate))
+	certificate, err := base64.StdEncoding.DecodeString(string(query.CertificateWithName.Certificate))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to decode certificate")
 		return nil, name, err
