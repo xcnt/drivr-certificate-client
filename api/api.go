@@ -102,7 +102,7 @@ func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string)
 		return nil, err
 	}
 
-	ca, err := base64.RawStdEncoding.DecodeString(string(query.CA.Items[0].Ca))
+	ca, err := base64.StdEncoding.DecodeString(string(query.CA.Items[0].Ca))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to decode CA certificate")
 		return nil, err
