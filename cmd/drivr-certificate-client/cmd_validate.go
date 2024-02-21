@@ -19,20 +19,19 @@ var (
 		Usage:   "Certificate file to validate",
 	}
 	mqttBrokerFlag = &cli.StringFlag{
-		Name:    "mqtt-broker",
-		Aliases: []string{"b"},
-		Usage:   "MQTT broker to connect to",
+		Name:  "mqtt-broker",
+		Usage: "MQTT broker to connect to",
 	}
 	mqttBrokerPortFlag = &cli.IntFlag{
-		Name:    "mqtt-broker-port",
-		Aliases: []string{"p"},
-		Usage:   "MQTT broker port to connect to",
-		Value:   8883,
+		Name:  "mqtt-broker-port",
+		Usage: "MQTT broker port to connect to",
+		Value: 8883,
 	}
 	caCertInfileFlag = &cli.StringFlag{
 		Name:    "ca-cert",
 		Aliases: []string{"a"},
 		Usage:   "CA certificate file",
+		Value:   "ca.crt",
 	}
 )
 
@@ -48,6 +47,7 @@ func validateCommand() *cli.Command {
 			certificateInfileFlag,
 			mqttBrokerFlag,
 			mqttBrokerPortFlag,
+			issuerFlag,
 		},
 	}
 }
@@ -80,6 +80,18 @@ func newTLSConfig(caCert []byte, clientCert, clientPrivateKey string) (*tls.Conf
 
 func validateCertificate(ctx *cli.Context) error {
 	cacertfile := ctx.String(caCertInfileFlag.Name)
+	privKeyFile := ctx.String(privateKeyInfileFlag.Name)
+	certificateFile := ctx.String(certificateInfileFlag.Name)
+	mqttBroker := ctx.String(mqttBrokerFlag.Name)
+	mqttBrokerPort := ctx.Int(mqttBrokerPortFlag.Name)
+
+	if certificateFile == "" {
+		return fmt.Errorf("certificate file must be specified")
+	}
+
+	if privKeyFile == "" {
+		return fmt.Errorf("private key file must be specified")
+	}
 
 	var cacert []byte
 
@@ -104,11 +116,6 @@ func validateCertificate(ctx *cli.Context) error {
 			return err
 		}
 	}
-
-	privKeyFile := ctx.String(privateKeyInfileFlag.Name)
-	certificateFile := ctx.String(certificateInfileFlag.Name)
-	mqttBroker := ctx.String(mqttBrokerFlag.Name)
-	mqttBrokerPort := ctx.Int(mqttBrokerPortFlag.Name)
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", mqttBroker, mqttBrokerPort))
