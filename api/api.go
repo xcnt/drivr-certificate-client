@@ -97,13 +97,14 @@ func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string)
 	}
 
 	if query.CA.Items[0].Ca == "" {
-		logrus.WithField("issuer", issuer).Error("No CA found for issuer")
+		err := errors.New("No CA found for issuer")
+		logrus.WithError(err).WithField("issuer", issuer).Error("Failed to fetch CA certificate")
 		return nil, err
 	}
 
 	ca, err := base64.RawStdEncoding.DecodeString(string(query.CA.Items[0].Ca))
 	if err != nil {
-		logrus.WithError(err).Error("Failed to decode ca certificate")
+		logrus.WithError(err).Error("Failed to decode CA certificate")
 		return nil, err
 	}
 	return ca, nil
