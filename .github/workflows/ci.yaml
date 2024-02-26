@@ -46,7 +46,7 @@ jobs:
         run: docker context create buildx || true
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           endpoint: buildx
           config-inline: |
@@ -238,7 +238,7 @@ jobs:
         run: docker context create buildx || true
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           endpoint: buildx
       - name: Set up Go
