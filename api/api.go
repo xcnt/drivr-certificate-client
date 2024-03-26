@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -107,7 +108,10 @@ func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string)
 		logrus.WithError(err).Error("Failed to decode CA certificate")
 		return nil, err
 	}
-	return ca, nil
+
+	derBlock, _ := pem.Decode(ca)
+
+	return derBlock.Bytes, nil
 }
 
 func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byte, string, error) {
@@ -130,8 +134,11 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 		return nil, name, errors.New("Certificate not yet signed")
 	}
 
-	certificate := string(query.CertificateWithName.Certificate)
-	return []byte(certificate), name, nil
+	certificate, err := string(query.CertificateWithName.Certificate)
+
+	derBlock, _ := pem.Decode(certificate)
+
+	return derBlock.Bytes, name, nil
 }
 
 func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID, error) {
