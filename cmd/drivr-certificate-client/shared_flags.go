@@ -34,6 +34,12 @@ var (
 		Usage:    "Static API key for authenticating requests.",
 		EnvVars:  []string{"DRIVR_API_KEY"},
 		Required: true,
+		Action: func(c *cli.Context, value string) error {
+			if c.String("api-key") == "" {
+				return cli.Exit("api-key cannot be empty", 1)
+			}
+			return nil
+		},
 	}
 	issuerFlag = &cli.StringFlag{
 		Name:    "issuer",
