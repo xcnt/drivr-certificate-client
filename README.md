@@ -22,17 +22,17 @@ Enable completion for the current zsh shell run:
 
 Create a certificate for a component:
 
-    `drivr-certificate-client create certificate -n <name> -c <code of the component to create certificate for> --drivr-api <URL to the DRIVR API>` 
+    `drivr-certificate-client create certificate -n <name> -c <code of the component to create certificate for> --drivr-api <URL to the DRIVR API> --api-key <API key>` 
 
 Create a certificate for a system:
 
-    `drivr-certificate-client create certificate -n <name> -s <code of the system to create certificate for> --drivr-api <URL to the DRIVR API>` 
+    `drivr-certificate-client create certificate -n <name> -s <code of the system to create certificate for> --drivr-api <URL to the DRIVR API> --api-key <API key>` 
 
 ### Fetch certificate
 
 Fetch a requested certificate for a specific device identified by its uuid:
 
-    `drivr-certificate-client fetch certificate --uuid <device uuid> --drivr-api <URL to the DRIVR API>`
+    `drivr-certificate-client fetch certificate --uuid <device uuid> --drivr-api <URL to the DRIVR API> --api-key <API key>`
 
 ## Debugging
 
