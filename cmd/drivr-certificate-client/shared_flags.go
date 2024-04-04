@@ -30,10 +30,10 @@ var (
 		EnvVars:  []string{"DRIVR_API_URL"},
 	}
 	drivrAPIKeyFlag = &cli.StringFlag{
-		Name:    "api-key",
-		Usage:   "Static API key for authenticating requests.",
-		Value:   "",
-		EnvVars: []string{"DRIVR_API_KEY"},
+		Name:     "api-key",
+		Usage:    "Static API key for authenticating requests.",
+		EnvVars:  []string{"DRIVR_API_KEY"},
+		Required: true,
 	}
 	issuerFlag = &cli.StringFlag{
 		Name:    "issuer",
