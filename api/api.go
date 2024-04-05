@@ -47,7 +47,7 @@ func newClient(apiURL url.URL, apiToken string) (*graphql.Client, error) {
 	var httpClient *http.Client
 
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: apiToken},
+		&oauth2.Token{AccessToken: apiToken, TokenType: "basic"},
 	)
 	httpClient = oauth2.NewClient(context.Background(), src)
 
