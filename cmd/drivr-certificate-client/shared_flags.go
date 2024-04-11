@@ -1,6 +1,11 @@
 package main
 
-import "github.com/urfave/cli/v2"
+import (
+	"fmt"
+	"os"
+
+	"github.com/urfave/cli/v2"
+)
 
 var (
 	nameFlag = &cli.StringFlag{
@@ -29,18 +34,6 @@ var (
 		Required: true,
 		EnvVars:  []string{"DRIVR_API_URL"},
 	}
-	drivrAPIKeyFlag = &cli.StringFlag{
-		Name:     "api-key",
-		Usage:    "Static API key for authenticating requests.",
-		EnvVars:  []string{"DRIVR_API_KEY"},
-		Required: true,
-		Action: func(c *cli.Context, value string) error {
-			if c.String("api-key") == "" {
-				return cli.Exit("api-key cannot be empty", 1)
-			}
-			return nil
-		},
-	}
 	issuerFlag = &cli.StringFlag{
 		Name:    "issuer",
 		Value:   "default",
@@ -48,3 +41,17 @@ var (
 		Usage:   "Issuer of the certificate",
 	}
 )
+
+const drivrAPIKeyEnv = "DRIVR_API_KEY"
+
+func getAPIKey() string {
+	// read the API key from the environment
+	return os.Getenv(drivrAPIKeyEnv)
+}
+
+func checkAPIKey(ctx *cli.Context) error {
+	if getAPIKey() == "" {
+		return fmt.Errorf("%s environment variable not set", drivrAPIKeyEnv)
+	}
+	return nil
+}

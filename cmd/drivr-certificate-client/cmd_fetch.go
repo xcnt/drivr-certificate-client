@@ -23,8 +23,9 @@ var (
 
 func fetchCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "fetch",
-		Usage: "Fetch certificates from DRIVR",
+		Name:   "fetch",
+		Usage:  "Fetch certificates from DRIVR",
+		Before: checkAPIKey,
 		Subcommands: []*cli.Command{
 			fetchCertificateCommand(),
 			fetchCertificateAutorityCommand(),
@@ -39,7 +40,6 @@ func fetchCertificateAutorityCommand() *cli.Command {
 		Action: fetchCertificateAutority,
 		Flags: []cli.Flag{
 			issuerFlag,
-			drivrAPIKeyFlag,
 			drivrAPIURLFlag,
 		},
 	}
@@ -52,7 +52,6 @@ func fetchCertificateCommand() *cli.Command {
 		Action: fetchCertificate,
 		Flags: []cli.Flag{
 			certificateUUIDFlag,
-			drivrAPIKeyFlag,
 			drivrAPIURLFlag,
 		},
 	}
@@ -79,7 +78,7 @@ func fetchCertificateAutority(ctx *cli.Context) error {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err
 	}
-	ca, err := getCaCert(ctx.Context, ctx.String(issuerFlag.Name), apiURL, ctx.String(drivrAPIKeyFlag.Name))
+	ca, err := getCaCert(ctx.Context, ctx.String(issuerFlag.Name), apiURL, getAPIKey())
 	if err != nil {
 		logrus.WithError(err).Error("Failed to fetch CA certificate")
 		return err
@@ -106,7 +105,7 @@ func fetchCertificate(ctx *cli.Context) error {
 		return errors.New("invalid certificate UUID")
 	}
 
-	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
+	drivrAPI, err := api.NewDrivrAPI(apiURL, getAPIKey())
 	if err != nil {
 		logrus.WithError(err).Error("Failed to initialize DRIVR API Client")
 		return err

@@ -92,11 +92,11 @@ func certificateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "certificate",
 		Usage:  "Create a new certificate",
+		Before: checkAPIKey,
 		Action: createCertificate,
 		Flags: []cli.Flag{
 			nameFlag,
 			privateKeyInfileFlag,
-			drivrAPIKeyFlag,
 			systemCodeFlag,
 			componentCodeFlag,
 			drivrAPIURLFlag,
@@ -151,7 +151,7 @@ func createCertificate(ctx *cli.Context) error {
 	}
 
 	logrus.Debug("Initializing DRIVR API Client")
-	drivrAPI, err := api.NewDrivrAPI(apiURL, ctx.String(drivrAPIKeyFlag.Name))
+	drivrAPI, err := api.NewDrivrAPI(apiURL, getAPIKey())
 	if err != nil {
 		logrus.WithError(err).Error("Failed to create DRIVR API client")
 		return err
