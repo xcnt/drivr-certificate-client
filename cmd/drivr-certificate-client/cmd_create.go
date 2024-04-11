@@ -92,7 +92,7 @@ func certificateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "certificate",
 		Usage:  "Create a new certificate",
-		Before: checkAPIKey,
+		Before: combinedCheckFuncs(checkSystemComponentCode, checkAPIKey),
 		Action: createCertificate,
 		Flags: []cli.Flag{
 			nameFlag,
@@ -113,14 +113,6 @@ func createCertificate(ctx *cli.Context) error {
 	componentCode := ctx.String(componentCodeFlag.Name)
 	duration := ctx.String(certificateDurationFlag.Name)
 	issuer := ctx.String(issuerFlag.Name)
-
-	if systemCode == "" && componentCode == "" {
-		return errors.New("Either system code or component code must be specified")
-	}
-
-	if systemCode != "" && componentCode != "" {
-		return errors.New("Either system code or component code must be specified, not both")
-	}
 
 	var err error
 
