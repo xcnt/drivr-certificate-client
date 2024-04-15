@@ -51,11 +51,11 @@ const drivrAPIKeyEnv = "DRIVR_API_KEY"
 var apikey string
 
 func getAPIKey() string {
-	// read the API key from the environment
 	if apikey != "" {
 		return apikey
 	}
 
+	// try read the API key from the environment
 	if envAPIKey := os.Getenv(drivrAPIKeyEnv); envAPIKey != "" {
 		apikey = envAPIKey
 		return apikey
