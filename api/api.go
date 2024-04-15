@@ -128,13 +128,13 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 
 	certificate := string(query.CertificateWithName.Certificate)
 
-	derBlock, _ := pem.Decode([]byte(certificate))
-	if derBlock == nil {
+	decodedCert, _ := pem.Decode([]byte(certificate))
+	if decodedCert == nil {
 		logrus.WithField("certificate_uuid", uuid).Error("Failed to decode certificate")
 		return nil, name, errors.New("Failed to decode certificate")
 	}
 
-	return derBlock.Bytes, name, nil
+	return decodedCert.Bytes, name, nil
 }
 
 func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID, error) {
