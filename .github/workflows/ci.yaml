@@ -54,7 +54,7 @@ jobs:
               mirrors = ["ci-registry.drivr.dev"]
       - name: Build
         id: docker_build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.docker_meta.outputs.buildTags }}
