@@ -39,9 +39,9 @@ func validateCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "validate",
 		Usage:  "Validate a certificate",
+		Before: checkAPIKey,
 		Action: validateCertificate,
 		Flags: []cli.Flag{
-			drivrAPIKeyFlag,
 			drivrAPIURLFlag,
 			privateKeyInfileFlag,
 			certificateInfileFlag,
@@ -105,7 +105,7 @@ func validateCertificate(ctx *cli.Context) error {
 		if issuer == "" || apiURL == nil {
 			return fmt.Errorf("either %s or %s and %s must be specified", caCertInfileFlag.Name, issuerFlag.Name, drivrAPIURLFlag.Name)
 		}
-		cacert, err = getCaCert(ctx.Context, issuer, apiURL, ctx.String(drivrAPIKeyFlag.Name))
+		cacert, err = getCaCert(ctx.Context, issuer, apiURL, getAPIKey())
 		if err != nil {
 			return err
 		}

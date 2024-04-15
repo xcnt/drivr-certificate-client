@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -45,16 +46,8 @@ func injectLoggingTransport(c *http.Client) {
 func newClient(apiURL url.URL, apiToken string) (*graphql.Client, error) {
 	var httpClient *http.Client
 
-	if apiToken == "" {
-		clientID, clientSecret, err := getOAuthCredentials()
-		if err != nil {
-			return nil, err
-		}
-		apiToken = oauthFlow(apiURL, clientID, clientSecret)
-	}
-
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: apiToken},
+		&oauth2.Token{AccessToken: apiToken, TokenType: "basic"},
 	)
 	httpClient = oauth2.NewClient(context.Background(), src)
 
@@ -107,7 +100,10 @@ func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string)
 		logrus.WithError(err).Error("Failed to decode CA certificate")
 		return nil, err
 	}
-	return ca, nil
+
+	derBlock, _ := pem.Decode(ca)
+
+	return derBlock.Bytes, nil
 }
 
 func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byte, string, error) {
@@ -131,7 +127,14 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 	}
 
 	certificate := string(query.CertificateWithName.Certificate)
-	return []byte(certificate), name, nil
+
+	decodedCert, _ := pem.Decode([]byte(certificate))
+	if decodedCert == nil {
+		logrus.WithField("certificate_uuid", uuid).Error("Failed to decode certificate")
+		return nil, name, errors.New("Failed to decode certificate")
+	}
+
+	return decodedCert.Bytes, name, nil
 }
 
 func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID, error) {
