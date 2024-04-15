@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/url"
@@ -185,18 +184,16 @@ func createCertificate(ctx *cli.Context) error {
 		return err
 	}
 
-	base64CSR := base64.StdEncoding.EncodeToString(csr)
-
 	logrus.WithFields(logrus.Fields{
 		"issuerUuid": issuerUUID,
 		"name":       name,
-		"csr":        base64CSR,
+		"csr":        string(csr),
 		"duration":   duration,
 		"entityUuid": entityUUID,
 	}).Debug("Calling DRIVR API")
 
 	var certificateUUID *uuid.UUID
-	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, name, base64CSR, duration)
+	certificateUUID, err = drivrAPI.CreateCertificate(ctx.Context, issuerUUID, entityUUID, name, string(csr), duration)
 
 	if err != nil {
 		logrus.WithError(err).Error("Failed to request certificate creation")
