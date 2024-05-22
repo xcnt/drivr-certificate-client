@@ -17,7 +17,7 @@ COPY ./ /app/
 
 RUN go build -ldflags="-X main.Version=${VERSION:=dev}" ./cmd/drivr-certificate-client
 
-FROM alpine:3.16 as runner
+FROM alpine:3.20 as runner
 
 COPY --from=builder /app/drivr-certificate-client /usr/local/bin/drivr-certificate-client
 
