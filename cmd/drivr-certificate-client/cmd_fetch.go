@@ -73,7 +73,7 @@ func getCaCert(ctx context.Context, issuer string, apiURL *url.URL, apiKey strin
 }
 
 func fetchCertificateAutority(ctx *cli.Context) error {
-	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
+	apiURL, err := url.Parse(getAPIUrl(ctx))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err
@@ -92,7 +92,7 @@ func fetchCertificateAutority(ctx *cli.Context) error {
 }
 
 func fetchCertificate(ctx *cli.Context) error {
-	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
+	apiURL, err := url.Parse(getAPIUrl(ctx))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err

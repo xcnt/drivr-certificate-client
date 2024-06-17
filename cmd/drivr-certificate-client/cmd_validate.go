@@ -97,7 +97,7 @@ func validateCertificate(ctx *cli.Context) error {
 
 	if cacertfile == "" {
 		issuer := ctx.String(issuerFlag.Name)
-		apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
+		apiURL, err := url.Parse(getAPIUrl(ctx))
 		if err != nil {
 			logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 			return err
