@@ -24,7 +24,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_REGISTRY_SECRET }}
       - name: Checkout GitHub Action Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: xcnt/ghaction-docker-meta
           ref: master
@@ -77,7 +77,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_REGISTRY_SECRET }}
       - name: Checkout GitHub Action Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: xcnt/ghaction-docker-meta
           ref: master
@@ -89,7 +89,7 @@ jobs:
         with:
           images: |
             eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Patch files
         run: |
           sed -i '/target:/d' docker-compose.yml
@@ -116,7 +116,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_REGISTRY_SECRET }}
       - name: Checkout GitHub Action Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: xcnt/ghaction-docker-meta
           ref: master
@@ -128,7 +128,7 @@ jobs:
         with:
           images: |
             eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Patch files
         run: |
           sed -i '/target:/d' docker-compose.yml
@@ -154,7 +154,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_REGISTRY_SECRET }}
       - name: Checkout GitHub Action Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: xcnt/ghaction-docker-meta
           ref: master
@@ -166,7 +166,7 @@ jobs:
         with:
           images: |
             eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Patch files
         run: |
           sed -i '/target:/d' docker-compose.yml
@@ -194,7 +194,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Setup Node.js
@@ -225,7 +225,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_REGISTRY_SECRET }}
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up QEMU
