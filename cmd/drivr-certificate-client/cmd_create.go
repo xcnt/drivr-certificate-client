@@ -116,7 +116,7 @@ func createCertificate(ctx *cli.Context) error {
 
 	var err error
 
-	apiURL, err := url.Parse(ctx.String(drivrAPIURLFlag.Name))
+	apiURL, err := url.Parse(getAPIUrl(ctx))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to parse GraphQL API URL")
 		return err

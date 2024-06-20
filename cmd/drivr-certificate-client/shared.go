@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -69,6 +70,14 @@ func getAPIKey() string {
 	}
 	apikey = string(keyBytes)
 	return apikey
+}
+
+func getAPIUrl(ctx *cli.Context) string {
+  apiURL := ctx.String(drivrAPIURLFlag.Name)
+  if !strings.HasPrefix(apiURL, "http") {
+    return fmt.Sprintf("https://%s", apiURL)
+  }
+  return apiURL
 }
 
 func combinedCheckFuncs(checks ...func(*cli.Context) error) func(*cli.Context) error {
