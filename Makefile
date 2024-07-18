@@ -4,7 +4,7 @@ GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
 $(GRAPHQL_SCHEMA):
 	curl localhost:8080/schema > $<
 
-api/generated.go: $(GRAPHQL_SCHEMA)
+api/generated.go: $(GRAPHQL_SCHEMA) api/genqlient.yaml
 	go generate ./api/...
 
 drivr-certificate-client: $(GOFILES)

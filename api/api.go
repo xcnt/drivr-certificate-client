@@ -15,6 +15,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"golang.org/x/oauth2"
 )
 
@@ -191,8 +192,15 @@ func (d *DrivrAPI) FetchComponentUUID(ctx context.Context, code string) (*uuid.U
 func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid, entityUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
 	resp, err := createCertificate(ctx, d.client, *issuerUuid, name, duration, csr, *entityUuid)
 	if err != nil {
-		logrus.WithError(err).Error("Failed to create certificate")
-		return nil, err
+		extensions := err.(gqlerror.List)[0].Extensions
+		sanitizedErrorMsg := ""
+		if errors, ok := extensions["errors"]; ok {
+			for code, msg := range errors.(map[string]interface{}) {
+				sanitizedErrorMsg = fmt.Sprintf("%s %v [%s].", sanitizedErrorMsg, msg, code)
+			}
+		}
+		newErr := fmt.Errorf("Failed to create certificate: %v", sanitizedErrorMsg)
+		return nil, newErr
 	}
 
 	uuid := resp.CreateCertificate.Uuid
