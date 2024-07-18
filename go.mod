@@ -3,9 +3,9 @@ module github.com/xcnt/drivr-certificate-client
 go 1.22.1
 
 require (
+	github.com/Khan/genqlient v0.7.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/google/uuid v1.6.0
-	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/oauth2 v0.19.0
@@ -13,7 +13,6 @@ require (
 )
 
 require (
-	github.com/Khan/genqlient v0.7.0 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alexflint/go-arg v1.4.2 // indirect
 	github.com/alexflint/go-scalar v1.0.0 // indirect
