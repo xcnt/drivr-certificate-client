@@ -1,3 +1,4 @@
+GRAPHQL_SCHEMA=api/schema.graphql
 GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
 
 drivr-certificate-client: $(GOFILES)
@@ -26,6 +27,9 @@ vulnerability-scan:
 	docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app go install golang.org/x/vuln/cmd/govulncheck@latest
 	docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app govulncheck ./...
 	docker-compose -f docker-compose.yml down
+
+download_schema:
+	curl localhost:8080/schema > $(GRAPHQL_SCHEMA)
 
 .PHONY: build format lint
 .DEFAULT_GOAL := build
