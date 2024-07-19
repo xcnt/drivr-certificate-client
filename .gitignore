@@ -28,3 +28,6 @@ go.work
 
 # distribution files
 dist/
+
+# generated files
+api/generated.go
