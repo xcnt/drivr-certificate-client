@@ -47,7 +47,7 @@ var (
 	}
 )
 
-const drivrAPIKeyEnv = "DRIVR_API_KEY"
+const drivrAPIKeyEnv = "DRIVR_API_TOKEN"
 
 var apikey string
 
@@ -73,11 +73,11 @@ func getAPIKey() string {
 }
 
 func getAPIUrl(ctx *cli.Context) string {
-  apiURL := ctx.String(drivrAPIURLFlag.Name)
-  if !strings.HasPrefix(apiURL, "http") {
-    return fmt.Sprintf("https://%s", apiURL)
-  }
-  return apiURL
+	apiURL := ctx.String(drivrAPIURLFlag.Name)
+	if !strings.HasPrefix(apiURL, "http") {
+		return fmt.Sprintf("https://%s", apiURL)
+	}
+	return apiURL
 }
 
 func combinedCheckFuncs(checks ...func(*cli.Context) error) func(*cli.Context) error {
