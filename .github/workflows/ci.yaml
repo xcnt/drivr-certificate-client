@@ -95,7 +95,7 @@ jobs:
           sed -i '/target:/d' docker-compose.yml
           sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
       - name: Bootup Docker Compose
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 3
           timeout_minutes: 5
@@ -134,7 +134,7 @@ jobs:
           sed -i '/target:/d' docker-compose.yml
           sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
       - name: Bootup Docker Compose
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 3
           timeout_minutes: 5
@@ -172,7 +172,7 @@ jobs:
           sed -i '/target:/d' docker-compose.yml
           sed -i "s~build:.*~image: ${{ steps.docker_meta.outputs.buildTag }}~g" docker-compose.yml
       - name: Bootup Docker Compose
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           max_attempts: 3
           timeout_minutes: 5
