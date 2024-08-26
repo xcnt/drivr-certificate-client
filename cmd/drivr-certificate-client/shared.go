@@ -47,7 +47,7 @@ var (
 	}
 )
 
-const drivrAPIKeyEnv = "DRIVR_API_KEY"
+const drivrAPIKeyEnv = "DRIVR_API_TOKEN"
 
 var apikey string
 
