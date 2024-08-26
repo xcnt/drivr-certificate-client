@@ -1,0 +1,51 @@
+mutation createCertificate($issuerUuid: UUID!, $name: String!, $duration: Timespan!, $csr: String!, $entityUuid: UUID!) {
+    createCertificate(issuerUuid: $issuerUuid, name: $name, duration: $duration, csr: $csr, entityUuid: $entityUuid) {
+        uuid
+    }
+}
+
+query fetchCertificate($uuid: UUID!) {
+    certificate(uuid: $uuid) {
+        uuid
+        name
+        certificate
+    }
+}
+
+query fetchIssuerUUIDByName($name: String!) {
+    issuers(where: {name: {_eq: $name}}, limit: 1) {
+        items {
+            uuid
+        }
+    }
+}
+
+query fetchCAByName($name: String!) {
+    issuers(where: {name: {_eq: $name}}, limit: 1) {
+        items {
+            ca 
+        }
+    }
+}
+
+query fetchDomainUUID {
+    currentDomain {
+        uuid
+    }
+}
+
+query fetchSystemUUIDByCode($code: String!) {
+    systems(where: {code: {_eq: $code}}, limit: 1) {
+        items {
+            uuid
+        }
+    }
+}
+
+query fetchComponentUUIDByCode($code: String!) {
+    components(where: {code: {_eq: $code}}, limit: 1) {
+        items {
+            uuid
+        }
+    }
+}

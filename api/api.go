@@ -1,5 +1,7 @@
 package api
 
+//go:generate go run github.com/Khan/genqlient
+
 import (
 	"context"
 	"encoding/base64"
@@ -10,9 +12,10 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
-	"github.com/shurcooL/graphql"
 	"github.com/sirupsen/logrus"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"golang.org/x/oauth2"
 )
 
@@ -43,7 +46,7 @@ func injectLoggingTransport(c *http.Client) {
 	c.Transport = &loggingTransport{c.Transport}
 }
 
-func newClient(apiURL url.URL, apiToken string) (*graphql.Client, error) {
+func newClient(apiURL url.URL, apiToken string) (graphql.Client, error) {
 	var httpClient *http.Client
 
 	src := oauth2.StaticTokenSource(
@@ -66,7 +69,7 @@ func newClient(apiURL url.URL, apiToken string) (*graphql.Client, error) {
 }
 
 type DrivrAPI struct {
-	client *graphql.Client
+	client graphql.Client
 }
 
 func NewDrivrAPI(apiURL *url.URL, apiToken string) (*DrivrAPI, error) {
@@ -79,23 +82,19 @@ func NewDrivrAPI(apiURL *url.URL, apiToken string) (*DrivrAPI, error) {
 }
 
 func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string) ([]byte, error) {
-	var query FetchCaQuery
-
-	err := d.client.Query(ctx, &query, map[string]interface{}{
-		"name": graphql.String(issuer),
-	})
+	resp, err := fetchCAByName(ctx, d.client, issuer)
 	if err != nil {
 		logrus.WithField("issuer", issuer).WithError(err).Error("Failed to query CA")
 		return nil, err
 	}
 
-	if query.CA.Items[0].Ca == "" {
+	if resp.Issuers.Items[0].Ca == "" {
 		err := errors.New("No CA found for issuer")
 		logrus.WithError(err).WithField("issuer", issuer).Error("Failed to fetch CA certificate")
 		return nil, err
 	}
 
-	ca, err := base64.StdEncoding.DecodeString(string(query.CA.Items[0].Ca))
+	ca, err := base64.StdEncoding.DecodeString(string(resp.Issuers.Items[0].Ca))
 	if err != nil {
 		logrus.WithError(err).Error("Failed to decode CA certificate")
 		return nil, err
@@ -107,26 +106,20 @@ func (d *DrivrAPI) FetchCertificateAuthority(ctx context.Context, issuer string)
 }
 
 func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byte, string, error) {
-	var query FetchCertificateQuery
-
-	vars := map[string]interface{}{
-		"uuid": NewGraphQLUUID(*uuid),
-	}
-
-	err := d.client.Query(ctx, &query, vars)
+	resp, err := fetchCertificate(ctx, d.client, *uuid)
 	if err != nil {
 		logrus.WithField("uuid", uuid).WithError(err).Error("Failed to query certificate")
 		return nil, "", err
 	}
 
-	name := string(query.CertificateWithName.Name)
+	name := resp.Certificate.Name
 
-	if query.CertificateWithName.Certificate == "" {
+	if resp.Certificate.Certificate == "" {
 		logrus.WithField("certificate_uuid", uuid).Debug("Certificate not yet signed")
 		return nil, name, errors.New("Certificate not yet signed")
 	}
 
-	certificate := string(query.CertificateWithName.Certificate)
+	certificate := resp.Certificate.Certificate
 
 	decodedCert, _ := pem.Decode([]byte(certificate))
 	if decodedCert == nil {
@@ -138,120 +131,78 @@ func (d *DrivrAPI) FetchCertificate(ctx context.Context, uuid *uuid.UUID) ([]byt
 }
 
 func (d *DrivrAPI) FetchIssuerUUID(ctx context.Context, name string) (*uuid.UUID, error) {
-	var query FetchIssuerUUIDQuery
-
-	vars := map[string]interface{}{
-		"name": graphql.String(name),
-	}
-
-	err := d.client.Query(ctx, &query, vars)
+	resp, err := fetchIssuerUUIDByName(ctx, d.client, name)
 	if err != nil {
 		logrus.WithField("issuer", name).WithError(err).Error("Failed to query issuer")
 		return nil, err
 	}
 
-	if len(query.Issuer.Items) != 1 {
+	if len(resp.Issuers.Items) != 1 {
 		logrus.WithField("issuer", name).Error("Issuer not found")
 		return nil, errors.New("Issuer not found")
 	}
 
-	uuidStr := string(query.Issuer.Items[0].Uuid)
-	uuid, err := uuid.Parse(uuidStr)
-	if err != nil {
-		logrus.WithField("issuer_uuid", uuidStr).WithError(err).Error("Failed to parse issuer UUID")
-		return nil, err
-	}
-
+	uuid := resp.Issuers.Items[0].Uuid
 	return &uuid, nil
 }
 
 func (d *DrivrAPI) FetchDomainUUID(ctx context.Context) (*uuid.UUID, error) {
-	var query FetchDomainUUIDQuery
-
-	err := d.client.Query(ctx, &query, nil)
+	resp, err := fetchDomainUUID(ctx, d.client)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to query domain")
 		return nil, err
 	}
 
-	uuidStr := string(query.CurrentDomain.Uuid)
-	uuid, err := uuid.Parse(uuidStr)
-	if err != nil {
-		logrus.WithField("domain_uuid", uuidStr).WithError(err).Error("Failed to parse domain UUID")
-		return nil, err
-	}
-
+	uuid := resp.CurrentDomain.Uuid
 	return &uuid, nil
 }
 
 func (d *DrivrAPI) FetchSystemUUID(ctx context.Context, code string) (*uuid.UUID, error) {
-	var query FetchSystemUUIDQuery
-
-	err := d.client.Query(ctx, &query, map[string]interface{}{
-		"code": graphql.String(code),
-	})
+	resp, err := fetchSystemUUIDByCode(ctx, d.client, code)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to query system")
 		return nil, err
 	}
 
-	if len(query.Systems.Items) == 0 {
+	if len(resp.Systems.Items) == 0 {
 		logrus.WithField("system_code", code).Error("System not found")
 		return nil, errors.New("System not found")
 	}
 
-	uuidStr := string(query.Systems.Items[0].Uuid)
-	uuid, err := uuid.Parse(uuidStr)
-	if err != nil {
-		logrus.WithField("system_uuid", uuidStr).WithError(err).Error("Failed to parse system UUID")
-		return nil, err
-	}
-
+	uuid := resp.Systems.Items[0].Uuid
 	return &uuid, nil
 }
 
 func (d *DrivrAPI) FetchComponentUUID(ctx context.Context, code string) (*uuid.UUID, error) {
-	var query FetchComponentUUIDQuery
-
-	err := d.client.Query(ctx, &query, map[string]interface{}{
-		"code": graphql.String(code),
-	})
+	resp, err := fetchComponentUUIDByCode(ctx, d.client, code)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to query component")
 		return nil, err
 	}
 
-	if len(query.Components.Items) == 0 {
+	if len(resp.Components.Items) == 0 {
 		logrus.WithField("component_code", code).Error("Component not found")
 		return nil, errors.New("Component not found")
 	}
 
-	uuidStr := string(query.Components.Items[0].Uuid)
-	uuid, err := uuid.Parse(uuidStr)
-	if err != nil {
-		logrus.WithField("component_uuid", uuidStr).WithError(err).Error("Failed to parse component UUID")
-		return nil, err
-	}
-
+	uuid := resp.Components.Items[0].Uuid
 	return &uuid, nil
 }
 
 func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid, entityUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
-	var mutation CreateCertificateMutation
-
-	vars := map[string]interface{}{
-		"issuerUuid": NewGraphQLUUID(*issuerUuid),
-		"name":       graphql.String(name),
-		"duration":   NewTimespan(duration),
-		"csr":        graphql.String(csr),
-		"entityUuid": NewGraphQLUUID(*entityUuid),
-	}
-
-	err := d.client.Mutate(ctx, &mutation, vars)
+	resp, err := createCertificate(ctx, d.client, *issuerUuid, name, duration, csr, *entityUuid)
 	if err != nil {
-		return nil, err
+		extensions := err.(gqlerror.List)[0].Extensions
+		sanitizedErrorMsg := ""
+		if errors, ok := extensions["errors"]; ok {
+			for code, msg := range errors.(map[string]interface{}) {
+				sanitizedErrorMsg = fmt.Sprintf("%s %v [%s].", sanitizedErrorMsg, msg, code)
+			}
+		}
+		newErr := fmt.Errorf("Failed to create certificate: %v", sanitizedErrorMsg)
+		return nil, newErr
 	}
 
-	uuid, err := uuid.Parse(string(mutation.Certificate.Uuid))
+	uuid := resp.CreateCertificate.Uuid
 	return &uuid, err
 }

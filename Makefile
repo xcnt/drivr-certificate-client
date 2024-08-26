@@ -1,11 +1,18 @@
+GRAPHQL_SCHEMA=api/schema.graphql
 GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*")
+
+$(GRAPHQL_SCHEMA):
+	curl localhost:8080/schema > $<
+
+api/generated.go: $(GRAPHQL_SCHEMA) api/genqlient.yaml
+	go generate ./api/...
 
 drivr-certificate-client: $(GOFILES)
 	go build -o $@ ./cmd/drivr-certificate-client
 
 build: lint drivr-certificate-client
 
-format:
+format: api/generated.go
 	go fmt ./...
 
 lint: format
@@ -27,5 +34,5 @@ vulnerability-scan:
 	docker-compose -f docker-compose.yml exec -T -e CGO_ENABLED=0 app govulncheck ./...
 	docker-compose -f docker-compose.yml down
 
-.PHONY: build format lint
+.PHONY: build format lint download_mods vulnerability-scan update_mods release
 .DEFAULT_GOAL := build

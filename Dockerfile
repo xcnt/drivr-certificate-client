@@ -15,7 +15,8 @@ RUN apk add --no-cache git && \
 
 COPY ./ /app/
 
-RUN go build -ldflags="-X main.Version=${VERSION:=dev}" ./cmd/drivr-certificate-client
+RUN go generate ./... && \
+    go build -ldflags="-X main.Version=${VERSION:=dev}" ./cmd/drivr-certificate-client
 
 FROM alpine:3.16 as runner
 
