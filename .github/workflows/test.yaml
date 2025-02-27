@@ -1,0 +1,48 @@
+name: test
+
+on: [push, workflow_dispatch]
+
+jobs:
+  select-runner-deployment:
+    name: select-runner-deployment
+    runs-on: default
+    outputs:
+      runner: ${{ env.RUNNER_DEPLOYMENT }}
+    steps:
+      - run: echo "RUNNER_DEPLOYMENT=default" >> $GITHUB_ENV
+      - run: echo "RUNNER_DEPLOYMENT=renovate" >> $GITHUB_ENV
+        if: startsWith(github.ref, 'refs/heads/renovate')
+
+  docker:
+    needs: [select-runner-deployment]
+    runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
+    steps:
+      - name: Cleanup Docker Environment
+        run: |
+          docker stop $(docker ps -a -q) || true
+          docker rm $(docker ps -a -q) || true
+          docker volume rm $(docker volume ls -q) || true
+          docker network rm $(docker network ls | grep compose | awk '{print $1}') || true
+      - name: Login to GAR
+        uses: xcnt/ci/.github/actions/docker-login@main
+        with:
+          password: ${{ secrets.GAR_KEY }}
+      - name: Checkout GitHub Action Repo
+        uses: actions/checkout@v4
+        with:
+          repository: xcnt/ghaction-docker-meta
+          ref: master
+          token: ${{ secrets.CI_AUTH_TOKEN }}
+          path: .github/actions/docker-meta
+      - name: Docker meta
+        id: docker_meta
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client-build
+      - name: Docker meta publish
+        id: docker_meta_publish
+        uses: ./.github/actions/docker-meta
+        with:
+          images: |
+            eu.gcr.io/xcnt-infrastructure/drivr-certificate-client
