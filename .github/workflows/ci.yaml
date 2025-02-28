@@ -27,6 +27,8 @@ jobs:
           go-version: '1.24.0'
       - name: Install dependencies
         run: go get -u ./...
+      - name: Generate code
+        run: go generate ./...
       - name: Lint
         run: go tool github.com/golangci/golangci-lint/cmd/golangci-lint run -v
       - name: Check for vulnerabilities
