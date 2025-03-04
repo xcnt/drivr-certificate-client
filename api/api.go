@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/uuid"
@@ -60,7 +61,10 @@ func newClient(apiURL url.URL, apiToken string) (graphql.Client, error) {
 		injectLoggingTransport(httpClient)
 	}
 
-	graphQLURL := apiURL.JoinPath("graphql")
+	graphQLURL := &apiURL
+	if !strings.HasSuffix(graphQLURL.Path, "/graphql") {
+		graphQLURL = graphQLURL.JoinPath("graphql")
+	}
 
 	logrus.WithField("graphql_url", graphQLURL.String()).Debug("init graphql client")
 	client := graphql.NewClient(graphQLURL.String(), httpClient)
@@ -188,8 +192,34 @@ func (d *DrivrAPI) FetchComponentUUID(ctx context.Context, code string) (*uuid.U
 	return &uuid, nil
 }
 
-func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid, entityUuid *uuid.UUID, name, csr, duration string) (*uuid.UUID, error) {
-	resp, err := createCertificate(ctx, d.client, *issuerUuid, name, duration, csr, *entityUuid)
+type CreateCertificateInput struct {
+	IssuerUUID   uuid.UUID
+	EntityUUID   uuid.UUID
+	Name         string
+	CSR          string
+	Duration     string
+	AddServerUse bool
+}
+
+func (i CreateCertificateInput) LogFields() logrus.Fields {
+	return logrus.Fields{
+		"issuerUuid": i.IssuerUUID.String(),
+		"name":       i.Name,
+		"csr":        i.CSR,
+		"duration":   i.Duration,
+		"entityUuid": i.EntityUUID.String(),
+		"serverUse":  i.AddServerUse,
+	}
+}
+
+func (d *DrivrAPI) CreateCertificate(ctx context.Context, input CreateCertificateInput) (*uuid.UUID, error) {
+
+	usages := []CertificateUsage{CertificateUsageClientAuth}
+	if input.AddServerUse {
+		usages = append(usages, CertificateUsageServerAuth)
+	}
+
+	resp, err := createCertificate(ctx, d.client, input.IssuerUUID, input.Name, input.Duration, input.CSR, input.EntityUUID, usages)
 	if err != nil {
 		extensions := err.(gqlerror.List)[0].Extensions
 		sanitizedErrorMsg := ""
@@ -198,7 +228,7 @@ func (d *DrivrAPI) CreateCertificate(ctx context.Context, issuerUuid, entityUuid
 				sanitizedErrorMsg = fmt.Sprintf("%s %v [%s].", sanitizedErrorMsg, msg, code)
 			}
 		}
-		newErr := fmt.Errorf("Failed to create certificate: %v", sanitizedErrorMsg)
+		newErr := fmt.Errorf("failed to create certificate: %v", sanitizedErrorMsg)
 		return nil, newErr
 	}
 
