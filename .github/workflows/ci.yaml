@@ -85,7 +85,7 @@ jobs:
       - name: Generate code
         run: go generate ./...
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean
