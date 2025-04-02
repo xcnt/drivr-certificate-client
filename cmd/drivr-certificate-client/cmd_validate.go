@@ -116,9 +116,8 @@ func validateCertificate(ctx *cli.Context) error {
 			return err
 		}
 	}
-
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", mqttBroker, mqttBrokerPort))
+	opts.AddBroker(fmt.Sprintf("ssl://%s:%d", mqttBroker, mqttBrokerPort))
 
 	tlsConfig, err := newTLSConfig(cacert, certificateFile, privKeyFile)
 	if err != nil {
@@ -130,5 +129,7 @@ func validateCertificate(ctx *cli.Context) error {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
+
+	fmt.Println("Successfully used certificate to connect to MQTT broker!")
 	return nil
 }
