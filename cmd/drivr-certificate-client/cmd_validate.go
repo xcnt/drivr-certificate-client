@@ -33,6 +33,12 @@ var (
 		Usage:   "CA certificate file",
 		Value:   "ca.crt",
 	}
+	topicFlag = &cli.StringFlag{
+		Name:    "topic",
+		Aliases: []string{"t"},
+		Usage:   "Optional topic to subscribe to",
+		Value:   "",
+	}
 )
 
 func validateCommand() *cli.Command {
@@ -48,6 +54,7 @@ func validateCommand() *cli.Command {
 			mqttBrokerFlag,
 			mqttBrokerPortFlag,
 			issuerFlag,
+			topicFlag,
 		},
 	}
 }
@@ -131,5 +138,27 @@ func validateCertificate(ctx *cli.Context) error {
 	}
 
 	fmt.Println("Successfully used certificate to connect to MQTT broker!")
+
+	topic := ctx.String(topicFlag.Name)
+	if topic != "" {
+		token := client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
+			fmt.Printf("Received message on topic %s: %s\n", msg.Topic(), string(msg.Payload()))
+		})
+		if token.Wait() && token.Error() != nil {
+			return token.Error()
+		}
+
+		m := token.(*mqtt.SubscribeToken).Result()
+		if m == nil {
+			return fmt.Errorf("Failed subscribing to topic: %s: invalid broker response", topic)
+		}
+
+		if m[topic] == 0 {
+			fmt.Printf("Subscribed to topic: %s\n", topic)
+		} else {
+			fmt.Printf("Failed subscribing to topic: %s: code: %d\n", topic, m[topic])
+		}
+	}
+
 	return nil
 }
