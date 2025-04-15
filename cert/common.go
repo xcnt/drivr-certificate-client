@@ -25,7 +25,7 @@ func WriteToPEMFile(keyType PEMType, keyBytes []byte, filename string) error {
 	}
 
 	var _, err = os.Stat(filename)
-	if err == nil {
+	if err != nil {
 		logrus.WithField("outfile", filename).Error("file already exists")
 		return fmt.Errorf("file %s already exists", filename)
 	}
