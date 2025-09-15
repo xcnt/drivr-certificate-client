@@ -1,6 +1,6 @@
 module github.com/xcnt/drivr-certificate-client
 
-go 1.24
+go 1.24.4
 
 require (
 	github.com/Khan/genqlient v0.8.0
