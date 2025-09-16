@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Setup Go
@@ -48,7 +48,7 @@ jobs:
     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Setup Node.js
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ needs.select-runner-deployment.outputs.runner }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Set up Go
